@@ -1,0 +1,124 @@
+/*
+ * graphics.cpp
+ * textcraft Source Code
+ * Available on Github
+ *
+ * Copyright (C) 2017 Karol "digitcrusher" Łacina
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "graphics.h"
+#include <utils/math.h>
+#include <math.h>
+#include "shapes.h"
+
+int getPixel(SDL_Surface* surface, int x, int y) {
+    return *((int*)(surface->pixels)+x+y*surface->w);
+}
+void drawPixel(SDL_Surface* surface, int x, int y, int color) {
+    if(squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}
+                     ,{(float)x, (float)y, (float)x, (float)y})) {
+        *((int*)(surface->pixels)+x+y*surface->w) = color;
+    }
+}
+void drawCircle(SDL_Surface* surface, int x, int y, int r, int color) {
+    for(double i=0; i<M_PI*2; i+=M_PI/4/r) {
+        drawPixel(surface, (int)x+sin(i)*r, (int)y+cos(i)*r, color);
+    }
+}
+void drawSquare(SDL_Surface* surface, int x, int y, float rot, int sidelen, int color) {
+    for(double i=0; i<M_PI*2; i+=M_PI/4/sidelen) {
+        drawPixel(surface, (int)x+sin(i)*squarer(i+-rot, sidelen), (int)y+cos(i)*squarer(i+-rot, sidelen), color);
+    }
+}
+void drawEllipse(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color) {
+    int x = (x2-x1)/2;
+    int y = (y2-y1)/2;
+    for(double i=0; i<M_PI*2; i+=M_PI/4/(((x2-x1)/2+(y2-y1)/2)/2)) {
+        drawPixel(surface, (int)x+sin(i)*((x2-x1)/2), (int)y+cos(i)*((y2-y1)/2), color);
+    }
+}
+void drawLine(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color) {
+    int d, dx, dy, ai, bi, xi, yi;
+    int x = x1, y = y1;
+    if (x1 < x2) {
+        xi = 1;
+        dx = x2 - x1;
+    } else {
+        xi = -1;
+        dx = x1 - x2;
+    }
+    if (y1 < y2) {
+        yi = 1;
+        dy = y2 - y1;
+    } else {
+        yi = -1;
+        dy = y1 - y2;
+    }
+    drawPixel(surface, x, y, color);
+    if (dx > dy) {
+        ai = (dy - dx) * 2;
+        bi = dy * 2;
+        d = bi - dx;
+        while (x != x2) {
+            if (d >= 0) {
+                x += xi;
+                y += yi;
+                d += ai;
+            } else {
+                d += bi;
+                x += xi;
+            }
+            drawPixel(surface, x, y, color);
+        }
+    } else {
+        ai = ( dx - dy ) * 2;
+        bi = dx * 2;
+        d = bi - dy;
+        while (y != y2) {
+            if (d >= 0) {
+                x += xi;
+                y += yi;
+                d += ai;
+            } else {
+                d += bi;
+                y += yi;
+            }
+            drawPixel(surface, x, y, color);
+        }
+    }
+}
+void drawRectangle(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color) {
+    drawLine(surface, x1, y1, x2, y1, color);
+    drawLine(surface, x2, y1, x2, y2, color);
+    drawLine(surface, x2, y2, x1, y2, color);
+    drawLine(surface, x1, y2, x1, y1, color);
+}
+int drawImage(SDL_Surface* from, int x, int y, SDL_Surface* to) {
+    SDL_Rect from_rect;
+    from_rect.x = -(x);
+    from_rect.y = -(y);
+    from_rect.w = x+from->w;
+    from_rect.h = y+from->h;
+    return SDL_BlitSurface(from, &from_rect, to, NULL);
+}
+void drawGraph(SDL_Surface* surface, float (*func)(float), float zoom, float x, float y, int color) {
+    int w = surface->w;
+    int h = surface->h;
+    drawLine(surface, 0, h/2+y, w, h/2+y, color);
+    drawLine(surface, w/2-x, 0, w/2-x, h, color);
+    for(int i=0; i<w; i++) {
+        drawPixel(surface, i, h/2-func((i+x-w/2)/zoom)*zoom+y, color);
+    }
+}
