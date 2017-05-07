@@ -129,25 +129,6 @@ struct genSettings {
     bool generate;
     float occurence; //1 in 1/occurence chance
 };
-class Game {
-    public:
-        float time;
-        List<Object*> objs;
-        List<Thing*> thingtypes;
-        Game();
-        virtual ~Game();
-        virtual void update(double delta);
-        virtual void render();
-        virtual int add(Object* obj);
-        virtual bool remove(int id);
-        virtual bool destroy(int id);
-        virtual Object* getObject(int id);
-        virtual Object* getObject(const char* classname);
-        virtual void generate(int seed, V2f mins, V2f maxs);
-        virtual unsigned int registerThing(Thing* thing);
-        virtual Thing* createThing(unsigned int type);
-        virtual Game& operator=(const Game& rvalue);
-};
 class Object {
     public:
         int id;
@@ -166,6 +147,25 @@ class Object {
         virtual void render(Renderer* render);
         virtual void applyImpulse(V2f j);
         virtual Object& operator=(const Object& rvalue);
+};
+class Game {
+    public:
+        float time;
+        List<Object*> objs;
+        List<Thing*> thingtypes;
+        Game();
+        virtual ~Game();
+        virtual void update(double delta);
+        virtual void render();
+        virtual int add(Object* obj);
+        virtual bool remove(int id);
+        virtual bool destroy(int id);
+        virtual Object* getObject(int id);
+        virtual Object* getObject(const char* classname);
+        virtual void generate(int seed, V2f mins, V2f maxs);
+        virtual unsigned int registerThing(Thing* thing);
+        virtual Thing* createThing(unsigned int type);
+        virtual Game& operator=(const Game& rvalue);
 };
 class Shape : public Object {
     public:

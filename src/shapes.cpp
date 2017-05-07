@@ -57,6 +57,12 @@ V2f Circle::getNormal(V2f angle) {
 Square::Square(float sidelen) : Shape() {
     this->sidelen = sidelen;
 }
+Square::Square(float radius, float restitution, float mass) : Shape(restitution, mass) {
+    this->sidelen = sidelen;
+}
+Square::Square(float radius, float restitution, float mass, int r, int g, int b) : Shape(restitution, mass, r, g, b) {
+    this->sidelen = sidelen;
+}
 Square::~Square() {
 }
 void Square::render(Renderer* render) {

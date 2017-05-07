@@ -22,6 +22,7 @@
 #include <iostream>
 #include "game.h"
 #include "graphics.h"
+#include "shapes.h"
 
 V2f carteToPolar(V2f carte) {
     return {(float)sqrt(pow(carte.x, 2)+pow(carte.y, 2)), fatp({0, 0}, carte)};
@@ -61,17 +62,31 @@ void Game::update(double delta) {
                     V2f pos2 = {(float)fmin(a->pos.x, b->pos.x), (float)fmin(a->pos.y, b->pos.y)};
                     float penetration = ra+rb-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
                     if(penetration > 0) {
-                        float e = fmin(a->shape->restitution, b->shape->restitution);
-                        float na = a->shape->getNormal(angle).y;
-                        float nb = b->shape->getNormal(angle+(V2f){0, M_PI}).y;
+                        float e, na, nb, ma, mb, pa, pb, f;
 
-                        float mag = (a->vel.x+b->vel.x)*cos(a->vel.y-nb)*-(1+e);
+                        e = fmin(a->shape->restitution, b->shape->restitution); //restitution
+                        na = a->shape->getNormal(angle).y; //normal a
+                        nb = b->shape->getNormal(angle+(V2f){0, M_PI}).y; //normal b
+                        if(a->shape->invmass) {
+                            ma = a->shape->invmass;
+                        }else {
+                            ma = 1;
+                        }
+                        if(b->shape->invmass) {
+                            mb = b->shape->invmass;
+                        }else {
+                            mb = 1;
+                        }
+                        pa = a->vel.x/ma;
+                        pb = b->vel.x/mb;
 
-                        a->applyImpulse({(fabs(mag)>penetration?mag:penetration*2)/(a->shape->invmass+b->shape->invmass), nb});
+                        f = (pa+pb)*cos(a->vel.y-nb)*-(1+e)/2+penetration*(float)delta;
 
-                        mag = (a->vel.x+b->vel.x)*cos(b->vel.y-na)*-(1+e);
+                        a->applyImpulse({f, nb});
 
-                        b->applyImpulse({(fabs(mag)>penetration?mag:penetration*2)/(a->shape->invmass+b->shape->invmass), na});
+                        f = (pa+pb)*cos(b->vel.y-na)*-(1+e)/2+penetration*(float)delta;
+
+                        b->applyImpulse({f, na});
                     }
                 }
             }
@@ -380,7 +395,7 @@ Renderer& Renderer::operator=(const Renderer& rvalue) {
 
 Thing::Thing(float health, float attack, genSettings generation
             ,void (*updatef)(Thing* thing, double delta)
-            ,void (*renderf)(Thing* thing, Renderer* context)) : Object(NULL) {
+            ,void (*renderf)(Thing* thing, Renderer* context)) : Object(new Square(2)) {
     this->classname = "Thing";
     this->type = 0;
     this->bagcurr = 0;

@@ -22,15 +22,16 @@
 #include <iostream>
 #include <karolslib.h>
 #include <utils/utils.h>
-#include <utils/module.h>
-#include <window/terminal.h>
 #include <SDL2/SDL.h>
 #include "game.h"
 #include "shapes.h"
 
 Renderer* renderer;
-Thing* hero;
+Object* hero;
 Game game;
+float gmulti = 1;
+bool pause = 1;
+bool running = 1;
 /*void generate() {
     choose:
     int seed;
@@ -94,15 +95,22 @@ char* KL_decode(char* str, unsigned int size, int pass) {
     return result;
 }
 
-float force = 1;
 void update(double delta) {
     game.update(delta);
     for(unsigned int i=0; i<game.objs.size(); i++) {
         Object* a = game.objs[i];
-        for(unsigned int j=i+1; j<game.objs.size(); j++) {
-            Object* b = game.objs[j];
-            a->applyImpulse({force*(float)delta, fatp(a->pos, b->pos)});
-            b->applyImpulse({force*(float)delta, fatp(b->pos, a->pos)});
+        if(a->shape) {
+            for(unsigned int j=i+1; j<game.objs.size(); j++) {
+                Object* b = game.objs[j];
+                if(b->shape) {
+                    V2f pos1 = {(float)fmax(a->pos.x, b->pos.x), (float)fmax(a->pos.y, b->pos.y)};
+                    V2f pos2 = {(float)fmin(a->pos.x, b->pos.x), (float)fmin(a->pos.y, b->pos.y)};
+                    float force = (6.674*10/pow(10, 11))/((1/a->shape->invmass)*(1/b->shape->invmass)/
+                                  pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
+                    a->applyImpulse({gmulti*force*(float)delta, fatp(a->pos, b->pos)});
+                    b->applyImpulse({gmulti*force*(float)delta, fatp(b->pos, a->pos)});
+                }
+            }
         }
     }
 }
@@ -164,14 +172,15 @@ int main(int argc, char** argv) {
     game.registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat
     renderer = new Renderer("textcraft 1.0", 800, 600, 1);
     game.add(renderer);
-    hero = game.createThing(Human);
+    hero = (Object*) game.createThing(Human);
     game.add(hero);
     srand(rand()*time(0));
-    for(int i=0; i<100; i++) {
-        Object* obj = new Object(new Circle(1, 0.75, 1, rand()%255, rand()%255, rand()%255));
+    for(int i=0; i<150; i++) {
+        int color = rand()%128;
+        Object* obj = new Object(new Circle(rand()%4+1, 0, 1, 255-color, 127, 127+color));
         srand(rand());
         obj->pos = {(float)(rand()%1000-500), (float)(rand()%1000-500)};
-        obj->vel = {1, (float)(rand()%1000/(M_PI*2))};
+        obj->vel = {5, (float)(rand()%314/100)};
         game.add(obj);
     }
     long lastTime = KL_getMS();
@@ -181,7 +190,7 @@ int main(int argc, char** argv) {
     long lastTimer = KL_getMS();
     double delta = 0;
     int ticks=0, frames=0;
-    bool running=1;
+    running = 1;
     while(running) {
         long now = KL_getMS();
         delta += (now-lastTime)/msPerTick;
@@ -194,22 +203,22 @@ int main(int argc, char** argv) {
                     case SDL_KEYDOWN:
                         switch(event.key.keysym.sym) {
                             case SDLK_w:
-                                hero->pos.y += 1;
+                                hero->applyImpulse({10, M_PI/2});
                                 break;
                             case SDLK_a:
-                                hero->pos.x -= 1;
+                                hero->applyImpulse({10, M_PI});
                                 break;
                             case SDLK_s:
-                                hero->pos.y -= 1;
+                                hero->applyImpulse({10, M_PI/2+M_PI});
                                 break;
                             case SDLK_d:
-                                hero->pos.x += 1;
+                                hero->applyImpulse({10, 0});
                                 break;
                             case SDLK_z:
-                                force += 1;
+                                gmulti *= 10;
                                 break;
                             case SDLK_x:
-                                force -= 1;
+                                gmulti /= 10;
                                 break;
                             case SDLK_SCROLLLOCK:
                                 renderer->zoom = 1;
@@ -218,8 +227,22 @@ int main(int argc, char** argv) {
                                 hero->pos = {0, 0};
                                 break;
                             case SDLK_DELETE:
-                                force = 1;
+                                gmulti = 1;
                                 break;
+                            case SDLK_END:
+                                hero->vel = {0, 0};
+                                break;
+                            case SDLK_ESCAPE:
+                                pause = !pause;
+                                break;
+                            case SDLK_INSERT: {
+                                int color = rand()%128;
+                                Object* obj = new Object(new Circle(rand()%4+1, 0.5, 1, 255-color, 127, 127+color));
+                                srand(rand());
+                                obj->pos = hero->pos;
+                                obj->vel = {5, (float)(rand()%314/100)};
+                                game.add(obj);
+                                }break;
                             /*case 'z':
                                 generate();
                                 break;
@@ -240,7 +263,7 @@ int main(int argc, char** argv) {
                 }
             }
             now = KL_getMS();
-            update((double)(now-lastUpdate)/1000);
+            if(!pause) update((double)(now-lastUpdate)/1000);
             lastUpdate = now;
             ticks++; //Increment by 1
             delta -= 1;
@@ -250,8 +273,8 @@ int main(int argc, char** argv) {
             render();
             frames++; //Increment by 1
         }
-        if(KL_getNS()-lastTimer >= 1000000000) {
-            lastTimer += 1000000000;
+        if(KL_getNS()-lastTimer >= 1000) {
+            lastTimer += 1000;
             frames = 0; //Reset FPS counter
             ticks = 0; //Reset TPS counter
         }

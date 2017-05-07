@@ -26,8 +26,8 @@ CCFLAGS=-Wall -std=c++11 -O -I.
 
 all: clean karolslib
 
-karolslib: karolslib.o math.o module.o terminal.o utils.o
-	$(LD) $(LDFLAGS) $(BD)/libkarolslib.a $(BD)/karolslib.o $(BD)/math.o $(BD)/module.o $(BD)/terminal.o $(BD)/utils.o $(LDLIBS)
+karolslib: karolslib.o math.o module.o utils.o
+	$(LD) $(LDFLAGS) $(BD)/libkarolslib.a $(BD)/karolslib.o $(BD)/math.o $(BD)/module.o $(BD)/utils.o $(LDLIBS)
 
 karolslib.o:
 	$(CC) $(CCFLAGS) $(SD)/karolslib.cpp -c -o $(BD)/karolslib.o
@@ -38,11 +38,8 @@ math.o:
 module.o:
 	$(CC) $(CCFLAGS) $(SD)/utils/module.cpp -c -o $(BD)/module.o
 
-terminal.o:
-	$(CC) $(CCFLAGS) $(SD)/window/terminal.cpp -c -o $(BD)/terminal.o
-
 utils.o:
 	$(CC) $(CCFLAGS) $(SD)/utils/utils.cpp -c -o $(BD)/utils.o
 
 clean:
-	rm -f $(BD)/libkarolslib.a $(BD)/karolslib.o $(BD)/math.o $(BD)/module.o $(BD)/terminal.o $(BD)/utils.o
+	rm -f $(BD)/libkarolslib.a $(BD)/karolslib.o $(BD)/math.o $(BD)/module.o $(BD)/utils.o

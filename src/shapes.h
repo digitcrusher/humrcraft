@@ -40,6 +40,8 @@ class Square : public Shape {
     public:
         float sidelen;
         Square(float sidelen);
+        Square(float sidelen, float restitution, float mass);
+        Square(float sidelen, float restitution, float mass, int r, int g, int b);
         virtual ~Square();
         virtual void render(Renderer* render);
         virtual float getRadius(V2f angle);

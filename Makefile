@@ -23,7 +23,7 @@ CCFLAGS=-Wall -Wno-write-strings -std=c++11 -ggdb -O0 -I. -I./karolslib/src
 LD=$(CC)
 #For linux:
 LDFLAGS=
-LDLIBS=-L./karolslib/build -lkarolslib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image
+LDLIBS=-L./karolslib/build -lkarolslib -lSDL2 -lSDL2_image
 #For windows:
 #LDFLAGS=-pthread -mwindows -lgdi32
 #LDLIBS=-L./karolslib/build -lkarolslib
