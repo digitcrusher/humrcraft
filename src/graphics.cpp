@@ -24,12 +24,25 @@
 #include "shapes.h"
 
 int getPixel(SDL_Surface* surface, int x, int y) {
-    return *((int*)(surface->pixels)+x+y*surface->w);
+    if(squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}
+                     ,{(float)x, (float)y, (float)x, (float)y})) {
+        return *(int*)((char*)surface->pixels+(x+y*surface->w)*(surface->pitch/surface->w));
+    }
+    return 0;
 }
 void drawPixel(SDL_Surface* surface, int x, int y, int color) {
     if(squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}
                      ,{(float)x, (float)y, (float)x, (float)y})) {
-        *((int*)(surface->pixels)+x+y*surface->w) = color;
+        uint8_t r1, g1, b1, a1, r2, g2, b2, a2;
+        int pixel = getPixel(surface, x, y);
+        SDL_GetRGBA(color, surface->format, &r1, &g1, &b1, &a1);
+        SDL_GetRGBA(pixel, surface->format, &r2, &g2, &b2, &a2);
+        if(a1 != 0) {
+            *(int*)((char*)surface->pixels+(x+y*surface->w)*(surface->pitch/surface->w)) = SDL_MapRGBA(surface->format
+                                                                  ,(r1*a1+r2*a2*(1-a1/255))/(a1+a2*(1-a1/255))
+                                                                  ,(g1*a1+g2*a2*(1-a1/255))/(a1+a2*(1-a1/255))
+                                                                  ,(b1*a1+b2*a2*(1-a1/255))/(a1+a2*(1-a1/255)), 255);
+        }
     }
 }
 void drawCircle(SDL_Surface* surface, int x, int y, int r, int color) {

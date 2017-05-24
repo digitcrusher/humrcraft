@@ -76,6 +76,12 @@ bool operator==(const V3d& lvalue, const V3d& rvalue) {
     return lvalue.x==rvalue.x && lvalue.y==rvalue.y && lvalue.z==rvalue.z;
 }
 
+V2f carteToPolar(V2f carte) {
+    return {(float)sqrt(pow(carte.x, 2)+pow(carte.y, 2)), fatp({0, 0}, carte)};
+}
+V2f polarToCarte(V2f polar) {
+    return {polar.x*(float)cos(polar.y), polar.x*(float)sin(polar.y)};
+}
 bool squareInSquare(square sqr1, square sqr2) {
     return (sqr2.x1 >= sqr1.x1 && sqr2.x1 <= sqr1.x2 && sqr2.y1 >= sqr1.y1 && sqr2.y1 <= sqr1.y2) ||
            (sqr2.x2 >= sqr1.x1 && sqr2.x2 <= sqr1.x2 && sqr2.y2 >= sqr1.y1 && sqr2.y2 <= sqr1.y2) ||
@@ -184,7 +190,7 @@ bool fpilu(line line, V point, float unprec) { //float point in line with unprec
 }
 float fatp(V p1, V p2) { //float angle to point
     float quarter=0,a,b,angle;
-    if(p1 == (V){0, 0} && p2 == (V){0, 0}) {
+    if((p1 == (V){0, 0} && p2 == (V){0, 0}) || p1 == p2) {
         return 0;
     }
     if(p2.x > p1.x) {

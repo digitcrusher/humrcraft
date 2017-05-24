@@ -20,15 +20,23 @@
  */
 #include <stdlib.h>
 #include <iostream>
-#include <karolslib.h>
+#include <fstream>
 #include <utils/utils.h>
 #include <SDL2/SDL.h>
-#include "game.h"
+#include <SDL2/SDL_image.h>
+#include "world.h"
 #include "shapes.h"
+#include "renderers.h"
+#include "graphics.h"
+#define RENDERER 1
 
+#if RENDERER == 1
+Raycaster* renderer;
+#else
 Renderer* renderer;
+#endif
 Object* hero;
-Game game;
+World* game = new World();
 float gmulti = 1;
 bool pause = 1;
 bool running = 1;
@@ -39,7 +47,7 @@ bool running = 1;
     if(stoi(KL_sread(KL_stdterm), &seed)) {
         goto choose;
     }
-    game.generate(seed, {-100, -100}, {100, 100});
+    game->generate(seed, {-100, -100}, {100, 100});
 }
 void help() {
     KL_swrite(KL_stdterm, "textcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n");
@@ -74,7 +82,6 @@ void help() {
     KL_cread(KL_stdterm);
 }*/
 void stop(int status) {
-    KL_deinit();
     SDL_Quit();
     exit(status);
 }
@@ -96,92 +103,125 @@ char* KL_decode(char* str, unsigned int size, int pass) {
 }
 
 void update(double delta) {
-    game.update(delta);
-    for(unsigned int i=0; i<game.objs.size(); i++) {
-        Object* a = game.objs[i];
-        if(a->shape) {
-            for(unsigned int j=i+1; j<game.objs.size(); j++) {
-                Object* b = game.objs[j];
-                if(b->shape) {
-                    V2f pos1 = {(float)fmax(a->pos.x, b->pos.x), (float)fmax(a->pos.y, b->pos.y)};
-                    V2f pos2 = {(float)fmin(a->pos.x, b->pos.x), (float)fmin(a->pos.y, b->pos.y)};
-                    float force = (6.674*10/pow(10, 11))/((1/a->shape->invmass)*(1/b->shape->invmass)/
-                                  pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
-                    a->applyImpulse({gmulti*force*(float)delta, fatp(a->pos, b->pos)});
-                    b->applyImpulse({gmulti*force*(float)delta, fatp(b->pos, a->pos)});
+    game->update(delta);
+    for(unsigned int i=0; i<game->objs.size(); i++) {
+        if(!game->objs.isFree(i)) {
+            Object* a = game->objs[i];
+            if(a->shape) {
+                for(unsigned int j=i+1; j<game->objs.size(); j++) {
+                    if(!game->objs.isFree(j)) {
+                        Object* b = game->objs[j];
+                        if(b->shape) {
+                            V2f pos1 = {(float)fmax(a->pos.x, b->pos.x), (float)fmax(a->pos.y, b->pos.y)};
+                            V2f pos2 = {(float)fmin(a->pos.x, b->pos.x), (float)fmin(a->pos.y, b->pos.y)};
+                            float force = (6.674*10/pow(10, 11))/((1/a->shape->invmass)*(1/b->shape->invmass)/
+                                          pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
+                            a->applyImpulse({gmulti*force*(float)delta, fatp(a->pos, b->pos)});
+                            b->applyImpulse({gmulti*force*(float)delta, fatp(b->pos, a->pos)});
+                        }
+                    }
                 }
             }
         }
     }
 }
 void render() {
-    renderer->pos = hero->pos;
-    game.render();
+    /*renderer->pos = {hero->pos.x+(float)cos(hero->rot.y)*3, hero->pos.y+(float)sin(hero->rot.y)*3};
+    renderer->rot = hero->rot;*/
+    SDL_SetRelativeMouseMode((SDL_bool)!pause);
+    game->render();
 }
 int main(int argc, char** argv) {
     if(SDL_Init(SDL_INIT_EVERYTHING)) {
         std::cout<<"SDL_Init error: "<<SDL_GetError()<<'\n';
         stop(1);
     }
-    if(KL_init()) {
-        std::cout<<"KL_init error"<<'\n';
-        stop(1);
-    }
     //help();
-    /*game.registerThing(new Thing(8, 1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
-    game.registerThing(new Thing(4, 1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
-    game.registerThing(new Thing(1, 0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick
-    game.registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Flower
-    game.registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/16}, NULL, Thing::defaultRenderf)); //Grass
-    game.registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/1024}, NULL, Thing::defaultRenderf)); //Wheat
-    game.registerThing(new Thing(0.25, 0.5, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Seeds
+    /*game->registerThing(new Thing(8, 1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
+    game->registerThing(new Thing(4, 1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
+    game->registerThing(new Thing(1, 0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick
+    game->registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Flower
+    game->registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/16}, NULL, Thing::defaultRenderf)); //Grass
+    game->registerThing(new Thing(0.5, 0.5, 0, {1, (float)1/1024}, NULL, Thing::defaultRenderf)); //Wheat
+    game->registerThing(new Thing(0.25, 0.5, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Seeds
 
-    game.registerThing(new Thing(5, 2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Flint
-    game.registerThing(new Thing(5, 2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stone
+    game->registerThing(new Thing(5, 2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Flint
+    game->registerThing(new Thing(5, 2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stone
 
-    game.registerThing(new Thing(0, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //TODO: Water
+    game->registerThing(new Thing(0, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //TODO: Water
 
-    game.registerThing(new Thing(80, 5, 0.5, {1, (float)1/4096}, NULL, Thing::defaultRenderf)); //Human
-    game.registerThing(new Thing(120, 5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Pig
-    game.registerThing(new Thing(450, 5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Cow
-    game.registerThing(new Thing(0.1, 5, 0.25, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Hamster
+    game->registerThing(new Thing(80, 5, 0.5, {1, (float)1/4096}, NULL, Thing::defaultRenderf)); //Human
+    game->registerThing(new Thing(120, 5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Pig
+    game->registerThing(new Thing(450, 5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Cow
+    game->registerThing(new Thing(0.1, 5, 0.25, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Hamster
 
-    game.registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
-    game.registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
-    game.registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat*/
-    game.registerThing(new Thing(1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
-    game.registerThing(new Thing(1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
-    game.registerThing(new Thing(0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick
-    game.registerThing(new Thing(0.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Flower
-    game.registerThing(new Thing(0.5, 0, {1, (float)1/16}, NULL, Thing::defaultRenderf)); //Grass
-    game.registerThing(new Thing(0.5, 0, {1, (float)1/1024}, NULL, Thing::defaultRenderf)); //Wheat
-    game.registerThing(new Thing(0.5, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Seeds
+    game->registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
+    game->registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
+    game->registerThing(new Thing(1, 0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat*/
+    game->registerThing(new Thing(1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
+    game->registerThing(new Thing(1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
+    game->registerThing(new Thing(0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick
+    game->registerThing(new Thing(0.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Flower
+    game->registerThing(new Thing(0.5, 0, {1, (float)1/16}, NULL, Thing::defaultRenderf)); //Grass
+    game->registerThing(new Thing(0.5, 0, {1, (float)1/1024}, NULL, Thing::defaultRenderf)); //Wheat
+    game->registerThing(new Thing(0.5, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Seeds
 
-    game.registerThing(new Thing(2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Flint
-    game.registerThing(new Thing(2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stone
+    game->registerThing(new Thing(2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Flint
+    game->registerThing(new Thing(2.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stone
 
-    game.registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //TODO: Water
+    game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //TODO: Water
 
-    game.registerThing(new Thing(5, 0.5, {1, (float)1/4096}, NULL, Thing::defaultRenderf)); //Human
-    game.registerThing(new Thing(5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Pig
-    game.registerThing(new Thing(5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Cow
-    game.registerThing(new Thing(5, 0.25, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Hamster
+    game->registerThing(new Thing(5, 0.5, {1, (float)1/4096}, NULL, Thing::defaultRenderf)); //Human
+    game->registerThing(new Thing(5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Pig
+    game->registerThing(new Thing(5, 1, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Cow
+    game->registerThing(new Thing(5, 0.25, {1, (float)1/2048}, NULL, Thing::defaultRenderf)); //Hamster
 
-    game.registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
-    game.registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
-    game.registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat
-    renderer = new Renderer("textcraft 1.0", 800, 600, 1);
-    game.add(renderer);
-    hero = (Object*) game.createThing(Human);
-    game.add(hero);
+    game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
+    game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
+    game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat
+#if RENDERER == 1
+    renderer = new Raycaster("textcraft 1.0", 800/2, 600/2);
+#else
+    renderer = new Renderer("textcraft 1.0", 800, 600);
+#endif
+    game->add(renderer);
+    hero = renderer;
+    hero->ori = {0, M_PI/2};
+
+    std::ifstream cfg("cfg.dat");
+    int lines=0;
+    char c;
+    for(int i=0; cfg.get(c); i++) {
+        if(c == '\n') {
+            lines++;
+        }
+    }
+    cfg.close();
+    KL_Vector<SDL_Surface> textures;
+    cfg.open("cfg.dat");
+    for(int i=0; i<lines; i++) {
+        std::string data;
+        cfg>>data;
+        std::cout<<data<<'\n';
+        if(data[0] != '#') {
+            SDL_Surface* tex = IMG_Load(data.c_str());
+            if(tex) {
+                textures.pushBack(*tex);
+            }
+        }
+    }
+    cfg.close();
+    SDL_UpdateWindowSurface(renderer->window);
+
     srand(rand()*time(0));
-    for(int i=0; i<150; i++) {
-        int color = rand()%128;
-        Object* obj = new Object(new Circle(rand()%4+1, 0, 1, 255-color, 127, 127+color));
+    for(int i=0; i<50; i++) {
+        //int color = rand()%128;
+        int tex = rand()%textures.size();
+        Object* obj = new Object(new Circle(rand()%4+1, 1, rand()%9+1, &textures[tex]));
         srand(rand());
-        obj->pos = {(float)(rand()%1000-500), (float)(rand()%1000-500)};
-        obj->vel = {5, (float)(rand()%314/100)};
-        game.add(obj);
+        obj->pos = {(float)(rand()%100-50), (float)(rand()%100-50)};
+        obj->vel = {1, (float)(rand()%314/100)};
+        game->add(obj);
     }
     long lastTime = KL_getMS();
     long lastUpdate = KL_getMS();
@@ -203,16 +243,16 @@ int main(int argc, char** argv) {
                     case SDL_KEYDOWN:
                         switch(event.key.keysym.sym) {
                             case SDLK_w:
-                                hero->applyImpulse({10, M_PI/2});
+                                hero->applyImpulse({1, hero->getOri().y});
                                 break;
                             case SDLK_a:
-                                hero->applyImpulse({10, M_PI});
+                                hero->applyImpulse({1, hero->getOri().y+(float)M_PI/2});
                                 break;
                             case SDLK_s:
-                                hero->applyImpulse({10, M_PI/2+M_PI});
+                                hero->applyImpulse({1, hero->getOri().y+(float)M_PI});
                                 break;
                             case SDLK_d:
-                                hero->applyImpulse({10, 0});
+                                hero->applyImpulse({1, hero->getOri().y-(float)M_PI/2});
                                 break;
                             case SDLK_z:
                                 gmulti *= 10;
@@ -235,20 +275,6 @@ int main(int argc, char** argv) {
                             case SDLK_ESCAPE:
                                 pause = !pause;
                                 break;
-                            case SDLK_INSERT: {
-                                int color = rand()%128;
-                                Object* obj = new Object(new Circle(rand()%4+1, 0.5, 1, 255-color, 127, 127+color));
-                                srand(rand());
-                                obj->pos = hero->pos;
-                                obj->vel = {5, (float)(rand()%314/100)};
-                                game.add(obj);
-                                }break;
-                            /*case 'z':
-                                generate();
-                                break;
-                            case 'x':
-                                help();
-                                break;*/
                         }
                         break;
                     case SDL_MOUSEWHEEL:
@@ -257,6 +283,40 @@ int main(int argc, char** argv) {
                             renderer->zoom += 1;
                         }
                         break;
+                    case SDL_MOUSEBUTTONUP:
+                        switch(event.button.button) {
+                            case SDL_BUTTON_LEFT: {
+                                    int color = rand()%128;
+                                    Object* obj = new Object(new Circle(rand()%4+1, 0.5, 1, 255-color, 127, 127+color, 255));
+                                    srand(rand());
+                                    obj->pos = renderer->getPos({event.button.x, event.button.y});
+                                    obj->vel = hero->vel;
+                                    game->add(obj);
+                                }break;
+                            case SDL_BUTTON_RIGHT: {
+                                    for(unsigned int i=0; i<game->objs.size(); i++) {
+                                        if(!game->objs.isFree(i)) {
+                                            Object* a = game->objs[i];
+                                            V2f pos = renderer->getPos({event.button.x, event.button.y});
+                                            V2f pos1 = {(float)fmax(a->pos.x, pos.x), (float)fmax(a->pos.y, pos.y)};
+                                            V2f pos2 = {(float)fmin(a->pos.x, pos.x), (float)fmin(a->pos.y, pos.y)};
+                                            //14318181818.181818182 - Little Boy atomic bomb power
+                                            //4184 - 1 g of TNT
+                                            V2f j = {-4184/(float)(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2))+1), fatp(a->pos, pos)};
+                                            a->applyImpulse(j);
+                                        }
+                                    }
+                                }break;
+                        }
+                        break;
+#if RENDERER == 1
+                    case SDL_MOUSEMOTION:
+                        if(!pause) {
+                            hero->ori.y -= renderer->fov/renderer->buffer->w*event.motion.xrel;
+                            SDL_WarpMouseInWindow(renderer->window, renderer->buffer->w/2, renderer->buffer->h/2);
+                        }
+                        break;
+#endif
                     case SDL_QUIT:
                         running = 0;
                         break;
@@ -273,8 +333,9 @@ int main(int argc, char** argv) {
             render();
             frames++; //Increment by 1
         }
-        if(KL_getNS()-lastTimer >= 1000) {
+        if(KL_getMS()-lastTimer >= 1000) {
             lastTimer += 1000;
+            std::cout<<frames<<' '<<ticks<<'\n';
             frames = 0; //Reset FPS counter
             ticks = 0; //Reset TPS counter
         }

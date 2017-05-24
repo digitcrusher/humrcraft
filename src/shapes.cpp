@@ -32,20 +32,30 @@ float squarer(float angle, float sidelen) {
 }
 
 Circle::Circle(float radius) : Shape() {
+    this->family.pushBack("Circle");
     this->radius = radius;
 }
 Circle::Circle(float radius, float restitution, float mass) : Shape(restitution, mass) {
+    this->family.pushBack("Circle");
     this->radius = radius;
 }
-Circle::Circle(float radius, float restitution, float mass, int r, int g, int b) : Shape(restitution, mass, r, g, b) {
+Circle::Circle(float radius, float restitution, float mass, int r, int g, int b, int a) : Shape(restitution, mass, r, g, b, a) {
+    this->family.pushBack("Circle");
+    this->radius = radius;
+}
+Circle::Circle(float radius, float restitution, float mass, SDL_Surface* texture) : Shape(restitution, mass, texture) {
+    this->family.pushBack("Circle");
     this->radius = radius;
 }
 Circle::~Circle() {
+    this->~Shape();
 }
-void Circle::render(Renderer* render) {
-    render->drawCircle(this->getPos(), this->radius, render->mapRGB(this->r, this->g, this->b));
-    render->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getRot().y)*this->getRadius(this->getRot())
-                    ,this->getPos().y+(float)sin(this->getRot().y)*this->getRadius(this->getRot())}, render->mapRGB(this->r, this->g, this->b));
+void Circle::render(Renderer* renderer) {
+    Shape::render(renderer);
+    renderer->drawCircle(this->getPos(), this->radius, renderer->mapRGBA(this->r, this->g, this->b, this->a));
+    renderer->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri())
+                    ,this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(this->getOri())}
+                    ,renderer->mapRGBA(this->r, this->g, this->b, this->a));
 }
 float Circle::getRadius(V2f angle) {
     return this->radius;
@@ -55,24 +65,33 @@ V2f Circle::getNormal(V2f angle) {
 }
 
 Square::Square(float sidelen) : Shape() {
+    this->family.pushBack("Square");
     this->sidelen = sidelen;
 }
-Square::Square(float radius, float restitution, float mass) : Shape(restitution, mass) {
+Square::Square(float sidelen, float restitution, float mass) : Shape(restitution, mass) {
+    this->family.pushBack("Square");
     this->sidelen = sidelen;
 }
-Square::Square(float radius, float restitution, float mass, int r, int g, int b) : Shape(restitution, mass, r, g, b) {
+Square::Square(float sidelen, float restitution, float mass, int r, int g, int b, int a) : Shape(restitution, mass, r, g, b, a) {
+    this->family.pushBack("Square");
+    this->sidelen = sidelen;
+}
+Square::Square(float sidelen, float restitution, float mass, SDL_Surface* texture) : Shape(restitution, mass, texture) {
+    this->family.pushBack("Square");
     this->sidelen = sidelen;
 }
 Square::~Square() {
+    this->~Shape();
 }
-void Square::render(Renderer* render) {
-    render->drawSquare(this->getPos(), this->getRot(), this->sidelen, render->mapRGB(this->r, this->g, this->b));
-    render->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getRot().y)*this->getRadius({-this->getRot().x, -this->getRot().y})
-                    ,this->getPos().y+(float)sin(this->getRot().y)*this->getRadius({-this->getRot().x, -this->getRot().y})}
-                    ,render->mapRGB(this->r, this->g, this->b));
+void Square::render(Renderer* renderer) {
+    Shape::render(renderer);
+    renderer->drawSquare(this->getPos(), this->getOri(), this->sidelen, renderer->mapRGBA(this->r, this->g, this->b, this->a));
+    renderer->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y})
+                    ,this->getPos().y+(float)sin(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y})}
+                    ,renderer->mapRGBA(this->r, this->g, this->b, this->a));
 }
 float Square::getRadius(V2f angle) {
-    return squarer(-(this->getRot().y+angle.y), this->sidelen);
+    return squarer(-(this->getOri().y+angle.y), this->sidelen);
 }
 V2f Square::getNormal(V2f angle) {
     return {0, angle.y};

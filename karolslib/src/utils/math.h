@@ -44,6 +44,12 @@ struct V3d {
     double x,y,z;
 };
 typedef V2f V;
+struct line {
+    float x1,y1,x2,y2;
+};
+struct square {
+    float x1,y1,x2,y2;
+};
 V2i operator+(const V2i& lvalue, const V2i& rvalue);
 V2f operator+(const V2f& lvalue, const V2f& rvalue);
 V2d operator+(const V2d& lvalue, const V2d& rvalue);
@@ -62,13 +68,9 @@ bool operator==(const V2d& lvalue, const V2d& rvalue);
 bool operator==(const V3i& lvalue, const V3i& rvalue);
 bool operator==(const V3f& lvalue, const V3f& rvalue);
 bool operator==(const V3d& lvalue, const V3d& rvalue);
-struct line {
-    float x1,y1,x2,y2;
-};
-struct square {
-    float x1,y1,x2,y2;
-};
 
+V2f carteToPolar(V2f carte);
+V2f polarToCarte(V2f polar);
 bool squareInSquare(square sqr1, square sqr2);
 bool squareInSquareCart(square sqr1, square sqr2); //square in square cartesian
 bool fpil(line line, V point); //float point in line

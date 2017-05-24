@@ -20,6 +20,7 @@
  */
 #include <stdlib.h>
 #include <src/utils/module.h>
+#include <src/window/terminal.h>
 #include <src/karolslib.h>
 
 #if !defined(_WIN32)
@@ -131,6 +132,10 @@ int WINAPI KL_WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLi
 bool KL_init() {
     //Set up stdmodbrd.
     KL_stdmodbrd = KL_createModBoard();
+    //Set up stdterm.
+    if(!(KL_stdterm = KL_createTerminal(TERMINAL_DEFAULT_BUFF_WIDTH, TERMINAL_DEFAULT_BUFF_HEIGHT, TERMINAL_DEFAULT_FLAGS, NULL, NULL))) {
+        return 1;
+    }
     //Create module main and add it to the global modboard modbrd.
     KL_addMod(*KL_createModule("main", NULL), KL_stdmodbrd);
     //Create routine main and add it to module main from modbrd.
@@ -168,4 +173,6 @@ void KL_deinit() {
     */
     //Delete stdmodbrd.
     KL_destroyModBoard(KL_stdmodbrd);
+    //Delete stdterm.
+    KL_destroyTerminal(KL_stdterm);
 }

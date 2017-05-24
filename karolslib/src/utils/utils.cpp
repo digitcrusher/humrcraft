@@ -19,8 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <math.h>
-#include <stdlib.h>
-#include <string.h>
 #include <src/utils/utils.h>
 
 #if defined(__linux__)

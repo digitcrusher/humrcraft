@@ -20,7 +20,7 @@
  */
 #ifndef SHAPES_H
 #define SHAPES_H
-#include "game.h"
+#include "world.h"
 
 float triangle(float i);
 float squarer(float angle, float sidelen);
@@ -30,9 +30,10 @@ class Circle : public Shape {
         float radius;
         Circle(float radius);
         Circle(float radius, float restitution, float mass);
-        Circle(float radius, float restitution, float mass, int r, int g, int b);
+        Circle(float radius, float restitution, float mass, int r, int g, int b, int a);
+        Circle(float radius, float restitution, float mass, SDL_Surface* texture);
         virtual ~Circle();
-        virtual void render(Renderer* render);
+        virtual void render(Renderer* renderer);
         virtual float getRadius(V2f angle);
         virtual V2f getNormal(V2f angle);
 };
@@ -41,9 +42,10 @@ class Square : public Shape {
         float sidelen;
         Square(float sidelen);
         Square(float sidelen, float restitution, float mass);
-        Square(float sidelen, float restitution, float mass, int r, int g, int b);
+        Square(float sidelen, float restitution, float mass, int r, int g, int b, int a);
+        Square(float sidelen, float restitution, float mass, SDL_Surface* texture);
         virtual ~Square();
-        virtual void render(Renderer* render);
+        virtual void render(Renderer* renderer);
         virtual float getRadius(V2f angle);
         virtual V2f getNormal(V2f angle);
 };

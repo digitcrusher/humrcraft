@@ -20,6 +20,8 @@
  */
 #ifndef KAROLSLIB_UTILS_H
 #define KAROLSLIB_UTILS_H
+#include <stdlib.h>
+#include <string.h>
 
 #if defined(__linux__)
 long KL_getMS();
