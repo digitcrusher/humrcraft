@@ -1,5 +1,5 @@
 /*
- * game.h
+ * world.h
  * textcraft Source Code
  * Available on Github
  *
@@ -18,8 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GAME_H
-#define GAME_H
+#ifndef WORLD_H
+#define WORLD_H
 #include <utils/utils.h>
 #include <utils/math.h>
 #include <SDL2/SDL.h>
@@ -128,9 +128,15 @@ struct genSettings {
     bool generate;
     float occurence; //1 in 1/occurence chance
 };
-class Object {
+struct manifold {
+    Object* a;
+    Object* b;
+    V2f angle;
+    float penetration;
+};
+class Object { //TODO: setPos() and etc
     public:
-        int id;
+        unsigned int id;
         KL_Vector<const char*> family;
         World* world;
         Shape* shape;
@@ -162,10 +168,10 @@ class World : public Object {
         virtual void update(double delta);
         virtual void render();
         virtual int add(Object* obj);
-        virtual bool remove(int id);
-        virtual bool destroy(int id);
+        virtual bool remove(unsigned int id);
+        virtual bool destroy(unsigned int id);
         virtual void destroyAll();
-        virtual Object* getObject(int id);
+        virtual Object* getObject(unsigned int id);
         virtual Object* getObject(const char* member, unsigned int level);
         virtual Object* getObject(const char* member, unsigned int level, unsigned int offset);
         virtual void generate(int seed, V2f mins, V2f maxs);
@@ -173,12 +179,12 @@ class World : public Object {
         virtual Thing* createThing(unsigned int type);
         virtual World& operator=(const World& rvalue);
 };
-class Shape : public Object {
+class Shape : public Object { //TODO: texture configuration
     public:
         Object* obj;
         float restitution;
         float invmass; //Inverse mass Kilograms
-        int r, g, b, a; //a affects transparency on texture
+        uint8_t r, g, b, a; //a affects transparency on texture
         SDL_Surface* texture;
         bool texmode; //0-solid, 1-textured
         Shape();
@@ -258,6 +264,7 @@ class Thing : public Object {
         static void defaultRenderf(Thing* thing, Renderer* renderer);
 };
 
-bool resolveCollision(Object* a, Object* b);
+bool checkCollision(manifold* manifold, Object* a, Object* b);
+bool resolveCollision(manifold manifold);
 
 #endif

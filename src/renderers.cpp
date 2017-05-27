@@ -1,5 +1,5 @@
 /*
- * renderers.h
+ * renderers.cpp
  * textcraft Source Code
  * Available on Github
  *
@@ -37,61 +37,71 @@ void Raycaster::begin() {
 }
 void Raycaster::end() {
     int start = KL_getMS();
-    //int fogr=0, fogg=0, fogb=0;
-    //int fogr=31, fogg=31, fogb=31;
-    int fogr=63, fogg=63, fogb=63;
-    //int fogr=127, fogg=127, fogb=127;
-    //int fogr=255, fogg=255, fogb=255;
-    SDL_FillRect(this->buffer, NULL, SDL_MapRGB(this->buffer->format, fogr, fogg, fogb));
     this->raycast(0, this->buffer->w);
     Renderer::end();
     std::cout<<KL_getMS()-start<<'\n';
 }
 void Raycaster::raycast(int sx, int ex) {
+    //int fogr=0, fogg=0, fogb=0;
+    //int fogr=31, fogg=31, fogb=31;
+    //int fogr=63, fogg=63, fogb=63;
+    //int fogr=127, fogg=127, fogb=127;
+    int fogr=255, fogg=255, fogb=255;
     float sa=sx/(this->buffer->w/this->fov), ea=ex/(this->buffer->w/this->fov);
     Object* ray = new Object(new Circle(0));
+    float rayvel = 1;
     for(float i=sa; i<this->fov && i<ea; i+=this->fov/this->buffer->w) {
         float distance = 0;
-        V2f angle;
-        Object* collision = NULL;
+        bool loop = 1;
+        KL_Vector<float> collisionsd;
+        KL_Vector<V2f> collisionsa;
+        KL_Vector<Object*> collisions;
         ray->pos = Object::getPos();
-        ray->vel = {1, this->getOri().y+this->fov/2-i};
-        while(!collision && distance < this->fos) {
+        ray->vel = {rayvel, this->getOri().y+this->fov/2-i};
+        while(loop && distance < this->fos) {
             for(unsigned int i=0; i<this->world->objs.size(); i++) {
                 if(!this->world->objs.isFree(i)) {
-                    Object* a = this->world->objs[i];
-                    angle.y = fatp(a->pos, ray->pos);
-                    if(a->shape && resolveCollision(ray, a)) {
-                        collision = a;
+                    Object* obj = this->world->objs[i];
+                    if(obj->shape && checkCollision(NULL, ray, obj)) {
+                        collisionsd.pushBack(distance);
+                        collisionsa.pushBack({0, fatp(obj->getPos(), ray->getPos())});
+                        collisions.pushBack(obj);
+                        if(obj->shape->a >= 255) {
+                            loop = 0;
+                        }
                         break;
                     }
                 }
             }
-            if(!collision) {
-                ray->update(1);
-                distance += ray->vel.x;
-            }
+            ray->update(1);
+            distance += rayvel;
         }
-        if(collision && collision->shape) {
-            float wallh = this->buffer->h/this->zoom;
-            int height = (wallh-distance)*this->zoom;
-            if(height > 0) {
-                int sx=this->buffer->w/this->fov*i, sy=this->buffer->h/2-height/2;
-                int ey=this->buffer->h/2+height/2;
-                if(collision->shape->texmode) {
-                    for(int i=0; i<ey-sy; i++) {
-                        uint8_t r, g, b, a;
-                        int x=(collision->shape->texture->w-1)/(M_PI*2)*(angle.y+collision->shape->getOri().y);
-                        int y=(float)(collision->shape->texture->h-1)/(ey-sy)*i;
-                        SDL_GetRGBA(::getPixel(collision->shape->texture, x, y)
-                                             ,collision->shape->texture->format, &r, &g, &b, &a);
-                        ::drawPixel(this->buffer, sx, sy+i, this->mapRGBA(r, g, b, fmax(a-255/this->fos*distance, 0)));
-                    }
-                }else {
-                    for(int i=0; i<ey-sy; i++) {
-                        uint8_t r, g, b, a;
-                        r = collision->shape->r, g = collision->shape->g, b = collision->shape->b, a = collision->shape->a;
-                        ::drawPixel(this->buffer, sx, sy+i, this->mapRGBA(r, g, b, fmax(a-255/this->fos*distance, 0)));
+        if(collisions.size() > 0) {
+            for(int j=collisions.size(); j-->0;) {
+                if(collisions[j]->shape) {
+                    float wallh = this->buffer->h/this->zoom;
+                    int height = (wallh-collisionsd[j])*this->zoom;
+                    if(height > 0) {
+                        int sx=this->buffer->w/this->fov*i, sy=this->buffer->h/2-height/2;
+                        int ey=this->buffer->h/2+height/2;
+                        if(collisions[j]->shape->texmode) {
+                            for(int k=0; k<ey-sy; k++) {
+                                uint8_t r, g, b, a;
+                                int x=(collisions[j]->shape->texture->w-1)/(M_PI*2)*(collisionsa[j].y+collisions[j]->shape->getOri().y);
+                                int y=(float)(collisions[j]->shape->texture->h-1)/(ey-sy)*k;
+                                SDL_GetRGBA(::getPixel(collisions[j]->shape->texture, x, y)
+                                                     ,collisions[j]->shape->texture->format, &r, &g, &b, &a);
+                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(r, g, b, a));
+                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(fogr, fogg, fogb, 255/this->fos*collisionsd[j]*((float)a/255)));
+                            }
+                        }else {
+                            for(int k=0; k<ey-sy; k++) {
+                                uint8_t r, g, b, a;
+                                r = collisions[j]->shape->r, g = collisions[j]->shape->g, b = collisions[j]->shape->b, a = collisions[j]->shape->a;
+                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(r, g, b, a));
+                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(fogr, fogg, fogb, 255/this->fos*collisionsd[j]*((float)a/255)));
+                            }
+                        }
                     }
                 }
             }

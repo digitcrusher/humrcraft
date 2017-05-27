@@ -23,11 +23,13 @@
 #include <fstream>
 #include <utils/utils.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include "world.h"
 #include "shapes.h"
 #include "renderers.h"
 #include "graphics.h"
+#include "gui.h"
 #define RENDERER 1
 
 #if RENDERER == 1
@@ -35,52 +37,13 @@ Raycaster* renderer;
 #else
 Renderer* renderer;
 #endif
+GUIProgressBar* progressbar;
+GUIFrame* frame;
 Object* hero;
 World* game = new World();
 float gmulti = 1;
 bool pause = 1;
 bool running = 1;
-/*void generate() {
-    choose:
-    int seed;
-    KL_swrite(KL_stdterm, "Enter seed ");
-    if(stoi(KL_sread(KL_stdterm), &seed)) {
-        goto choose;
-    }
-    game->generate(seed, {-100, -100}, {100, 100});
-}
-void help() {
-    KL_swrite(KL_stdterm, "textcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n");
-    KL_swrite(KL_stdterm, "This program comes with ABSOLUTELY NO WARRANTY.\n");
-    KL_swrite(KL_stdterm, "This is free software, and you are welcome to redistribute it\n");
-    KL_swrite(KL_stdterm, "under certain conditions.\n");
-    KL_swrite(KL_stdterm, "Controls\n");
-    KL_swrite(KL_stdterm, "Q - Drop a thing\n");
-    KL_swrite(KL_stdterm, "E - Pick up a thing\n");
-    KL_swrite(KL_stdterm, "W - Move forward\n");
-    KL_swrite(KL_stdterm, "A - Move left\n");
-    KL_swrite(KL_stdterm, "S - Move down\n");
-    KL_swrite(KL_stdterm, "D - Move right\n");
-    KL_swrite(KL_stdterm, "Z - Generate a world\n");
-    KL_swrite(KL_stdterm, "X - Get some help\n");
-    KL_swrite(KL_stdterm, "C - Settings\n");
-    KL_swrite(KL_stdterm, "Press any key to continue...\n");
-    KL_cread(KL_stdterm);
-    KL_swrite(KL_stdterm, "Characters\n");
-    KL_swrite(KL_stdterm, "@ - Hero\n");
-    KL_swrite(KL_stdterm, "Y - Tree\n");
-    KL_swrite(KL_stdterm, "n - Rock\n");
-    KL_swrite(KL_stdterm, "* - Flower\n");
-    KL_swrite(KL_stdterm, "m - Wolf\n");
-    KL_swrite(KL_stdterm, "# - Lava\n");
-    KL_swrite(KL_stdterm, "~ - Water\n");
-    KL_swrite(KL_stdterm, "# - Milk\n");
-    KL_swrite(KL_stdterm, "\" - Grass\n");
-    KL_swrite(KL_stdterm, "M - Cow\n");
-    KL_swrite(KL_stdterm, "o - Hamster\n");
-    KL_swrite(KL_stdterm, "Press any key to continue...\n");
-    KL_cread(KL_stdterm);
-}*/
 void stop(int status) {
     SDL_Quit();
     exit(status);
@@ -112,12 +75,12 @@ void update(double delta) {
                     if(!game->objs.isFree(j)) {
                         Object* b = game->objs[j];
                         if(b->shape) {
-                            V2f pos1 = {(float)fmax(a->pos.x, b->pos.x), (float)fmax(a->pos.y, b->pos.y)};
-                            V2f pos2 = {(float)fmin(a->pos.x, b->pos.x), (float)fmin(a->pos.y, b->pos.y)};
+                            V2f pos1 = {(float)fmax(a->getPos().x, b->getPos().x), (float)fmax(a->getPos().y, b->getPos().y)};
+                            V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
                             float force = (6.674*10/pow(10, 11))/((1/a->shape->invmass)*(1/b->shape->invmass)/
                                           pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
-                            a->applyImpulse({gmulti*force*(float)delta, fatp(a->pos, b->pos)});
-                            b->applyImpulse({gmulti*force*(float)delta, fatp(b->pos, a->pos)});
+                            a->applyImpulse({gmulti*force*(float)delta, fatp(a->getPos(), b->getPos())});
+                            b->applyImpulse({gmulti*force*(float)delta, fatp(b->getPos(), a->getPos())});
                         }
                     }
                 }
@@ -126,14 +89,24 @@ void update(double delta) {
     }
 }
 void render() {
-    /*renderer->pos = {hero->pos.x+(float)cos(hero->rot.y)*3, hero->pos.y+(float)sin(hero->rot.y)*3};
-    renderer->rot = hero->rot;*/
+#if RENDERER == 1
     SDL_SetRelativeMouseMode((SDL_bool)!pause);
+#endif
     game->render();
+    frame->render(SDL_GetWindowSurface(renderer->window));
+    SDL_UpdateWindowSurface(renderer->window);
 }
 int main(int argc, char** argv) {
+    std::cout<<"textcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
+    std::cout<<"This program comes with ABSOLUTELY NO WARRANTY.\n";
+    std::cout<<"This is free software, and you are welcome to redistribute it\n";
+    std::cout<<"under certain conditions.\n";
     if(SDL_Init(SDL_INIT_EVERYTHING)) {
         std::cout<<"SDL_Init error: "<<SDL_GetError()<<'\n';
+        stop(1);
+    }
+    if(TTF_Init()) {
+        std::cout<<"TTF_Init error: "<<TTF_GetError()<<'\n';
         stop(1);
     }
     //help();
@@ -179,16 +152,21 @@ int main(int argc, char** argv) {
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat
+    TTF_Font* font = TTF_OpenFont("gfx/fonts/FSEX300.ttf", 16);
+    frame = (GUIFrame*)(new GUIFrame())->setBGColor({191, 191, 191, 255})->setBounds(0, 0, 100, 100);
+    progressbar = (GUIProgressBar*)(new GUIProgressBar())->setBounds(0, 50, 100, 50)->setBGColor({191, 191, 191, 255})->setFGColor({0, 255, 0, 255});
+    GUIButton* widget = (GUIButton*)(new GUIButton())->setBGColor({191, 191, 191, 255})->setBounds(0, 0, 100, 50)->setEventListener(
+    [](int state) {
+        if(state == Release) {
+            progressbar->setProgress(progressbar->progress+0.1);
+        }
+    });
+    widget->add((new GUILabel(font, "GUIButton"))->setBounds(0, 0, 100, 50));
+    frame->add(progressbar);
+    frame->add(widget);
 #if RENDERER == 1
     renderer = new Raycaster("textcraft 1.0", 800/2, 600/2);
-#else
-    renderer = new Renderer("textcraft 1.0", 800, 600);
-#endif
-    game->add(renderer);
-    hero = renderer;
-    hero->ori = {0, M_PI/2};
-
-    std::ifstream cfg("cfg.dat");
+    std::ifstream cfg("cfg.dat"); //TODO: make a better parser
     int lines=0;
     char c;
     for(int i=0; cfg.get(c); i++) {
@@ -211,13 +189,21 @@ int main(int argc, char** argv) {
         }
     }
     cfg.close();
-    SDL_UpdateWindowSurface(renderer->window);
-
+#else
+    renderer = new Renderer("textcraft 1.0", 800, 600);
+#endif
+    game->add(renderer);
+    hero = renderer;
+    hero->ori = {0, M_PI/2};
     srand(rand()*time(0));
     for(int i=0; i<50; i++) {
-        //int color = rand()%128;
+#if RENDERER == 1
         int tex = rand()%textures.size();
         Object* obj = new Object(new Circle(rand()%4+1, 1, rand()%9+1, &textures[tex]));
+#else
+        int color = rand()%128;
+        Object* obj = new Object(new Circle(rand()%4+1, 1, rand()%9+1, 255-color, 127, 127+color, 255));
+#endif
         srand(rand());
         obj->pos = {(float)(rand()%100-50), (float)(rand()%100-50)};
         obj->vel = {1, (float)(rand()%314/100)};
@@ -290,7 +276,7 @@ int main(int argc, char** argv) {
                                     Object* obj = new Object(new Circle(rand()%4+1, 0.5, 1, 255-color, 127, 127+color, 255));
                                     srand(rand());
                                     obj->pos = renderer->getPos({event.button.x, event.button.y});
-                                    obj->vel = hero->vel;
+                                    obj->vel = hero->getVel();
                                     game->add(obj);
                                 }break;
                             case SDL_BUTTON_RIGHT: {
@@ -298,11 +284,11 @@ int main(int argc, char** argv) {
                                         if(!game->objs.isFree(i)) {
                                             Object* a = game->objs[i];
                                             V2f pos = renderer->getPos({event.button.x, event.button.y});
-                                            V2f pos1 = {(float)fmax(a->pos.x, pos.x), (float)fmax(a->pos.y, pos.y)};
-                                            V2f pos2 = {(float)fmin(a->pos.x, pos.x), (float)fmin(a->pos.y, pos.y)};
+                                            V2f pos1 = {(float)fmax(a->getPos().x, pos.x), (float)fmax(a->getPos().y, pos.y)};
+                                            V2f pos2 = {(float)fmin(a->getPos().x, pos.x), (float)fmin(a->getPos().y, pos.y)};
                                             //14318181818.181818182 - Little Boy atomic bomb power
                                             //4184 - 1 g of TNT
-                                            V2f j = {-4184/(float)(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2))+1), fatp(a->pos, pos)};
+                                            V2f j = {-4184/(float)(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2))+1), fatp(a->getPos(), pos)};
                                             a->applyImpulse(j);
                                         }
                                     }
@@ -321,6 +307,7 @@ int main(int argc, char** argv) {
                         running = 0;
                         break;
                 }
+                frame->processEvent(event);
             }
             now = KL_getMS();
             if(!pause) update((double)(now-lastUpdate)/1000);

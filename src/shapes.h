@@ -20,7 +20,11 @@
  */
 #ifndef SHAPES_H
 #define SHAPES_H
+#include <SDL2/SDL.h>
+#include <utils/math.h>
 #include "world.h"
+
+//TODO: MOAR SHAPES!!!
 
 float triangle(float i);
 float squarer(float angle, float sidelen);

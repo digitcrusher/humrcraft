@@ -20,6 +20,8 @@
  */
 #ifndef RENDERERS_H
 #define RENDERERS_H
+#include <SDL2/SDL.h>
+#include <utils/math.h>
 #include "world.h"
 
 class Raycaster : public Renderer {

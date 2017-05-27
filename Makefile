@@ -19,22 +19,28 @@
 SD=./src
 BD=./build
 CC=g++
-CCFLAGS=-Wall -Wpedantic -Wno-write-strings -std=c++11 -ggdb -O0 -I. -I./karolslib/src
+CCFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++11 -ggdb -O0 -I. -I./karolslib/src
 LD=$(CC)
 #For linux:
 LDFLAGS=
-LDLIBS=-L./karolslib/build -lkarolslib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image
+LDLIBS=-L./karolslib/build -lkarolslib -lSDL2 -lSDL2_image -lSDL2_ttf
 #For windows:
 #LDFLAGS=-pthread -mwindows -lgdi32
 #LDLIBS=-L./karolslib/build -lkarolslib
 
 all: clean textcraft
 
-textcraft: graphics.o main.o renderers.o shapes.o world.o
-	$(LD) $(LDFLAGS) $(BD)/graphics.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o $(LDLIBS) -o $(BD)/textcraft
+textcraft: graphics.o gui.o language.o main.o renderers.o shapes.o world.o
+	$(LD) $(LDFLAGS) $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o $(LDLIBS) -o $(BD)/textcraft
 
 graphics.o:
 	$(CC) $(CCFLAGS) $(SD)/graphics.cpp -c -o $(BD)/graphics.o
+
+gui.o:
+	$(CC) $(CCFLAGS) $(SD)/gui.cpp -c -o $(BD)/gui.o
+
+language.o:
+	$(CC) $(CCFLAGS) $(SD)/language.cpp -c -o $(BD)/language.o
 
 main.o:
 	$(CC) $(CCFLAGS) $(SD)/main.cpp -c -o $(BD)/main.o
@@ -49,4 +55,4 @@ world.o:
 	$(CC) $(CCFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/textcraft $(BD)/graphics.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o
+	rm -f $(BD)/textcraft $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o

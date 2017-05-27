@@ -1,5 +1,5 @@
 /*
- * game.cpp
+ * world.cpp
  * textcraft Source Code
  * Available on Github
  *
@@ -24,7 +24,7 @@
 #include "graphics.h"
 #include "shapes.h"
 
-bool resolveCollision(Object* a, Object* b) {
+bool checkCollision(manifold* manifold, Object* a, Object* b) {
     if(a->shape && b->shape) {
         V2f angle;
         angle.y = (float)fatp(a->getPos(), b->getPos());
@@ -33,32 +33,46 @@ bool resolveCollision(Object* a, Object* b) {
         V2f pos1 = {(float)fmax(a->getPos().x, b->getPos().x), (float)fmax(a->getPos().y, b->getPos().y)};
         V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
         float penetration = ra+rb-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
+        if(manifold) {
+            manifold->a = a;
+            manifold->b = b;
+            manifold->angle = angle;
+            manifold->penetration = penetration;
+        }
         if(penetration > 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+bool resolveCollision(manifold manifold) {
+    if(manifold.a->shape && manifold.b->shape) {
+        if(manifold.penetration > 0) {
             float e, na, nb, ma, mb, pa, pb, f;
 
-            e = fmin(a->shape->restitution, b->shape->restitution); //restitution
-            na = a->shape->getNormal(angle).y; //normal a
-            nb = b->shape->getNormal(angle+(V2f){0, M_PI}).y; //normal b
-            if(a->shape->invmass) {
-                ma = a->shape->invmass;
+            e = fmin(manifold.a->shape->restitution, manifold.b->shape->restitution); //restitution
+            na = manifold.a->shape->getNormal(manifold.angle).y; //normal a
+            nb = manifold.b->shape->getNormal(manifold.angle+(V2f){0, M_PI}).y; //normal b
+            if(manifold.a->shape->invmass) {
+                ma = manifold.a->shape->invmass;
             }else {
                 ma = 1;
             }
-            if(b->shape->invmass) {
-                mb = b->shape->invmass;
+            if(manifold.b->shape->invmass) {
+                mb = manifold.b->shape->invmass;
             }else {
                 mb = 1;
             }
-            pa = a->getVel().x/ma;
-            pb = b->getVel().x/mb;
+            pa = manifold.a->getVel().x/ma;
+            pb = manifold.b->getVel().x/mb;
 
-            f = (pa+pb)*cos(a->getVel().y-nb)*-(1+e)/2+penetration;
+            f = (pa+pb)*cos(manifold.a->getVel().y-nb)*-(1+e)/2+manifold.penetration;
 
-            a->applyImpulse({f, nb});
+            manifold.a->applyImpulse({f, nb});
 
-            f = (pa+pb)*cos(b->getVel().y-na)*-(1+e)/2+penetration;
+            f = (pa+pb)*cos(manifold.b->getVel().y-na)*-(1+e)/2+manifold.penetration;
 
-            b->applyImpulse({f, na});
+            manifold.b->applyImpulse({f, na});
             return 1;
         }
     }
@@ -137,7 +151,7 @@ void Object::applyTorque(V2f t) {
     }else {
         m = 1;
     }
-    this->rot.y = this->getRot().y+t.y*(1/t.x*m);
+    this->rot.y = this->rot.y+t.y*(1/t.x*m);
 }
 Object& Object::operator=(const Object& rvalue) {
     this->time = rvalue.time;
@@ -169,7 +183,9 @@ void World::update(double delta) {
                     if(!this->objs.isFree(j)) {
                         Object* b = this->objs[j];
                         if(b->shape) {
-                            resolveCollision(a, b);
+                            manifold manifold;
+                            checkCollision(&manifold, a, b);
+                            resolveCollision(manifold);
                         }
                     }
                 }
@@ -196,7 +212,7 @@ int World::add(Object* obj) {
     obj->world = this;
     return (obj->id = this->objs.add(obj));
 }
-bool World::remove(int id) {
+bool World::remove(unsigned int id) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
         if(this->objs[i]->id == id && !this->objs.isFree(i)) {
             this->objs.remove(i);
@@ -205,7 +221,7 @@ bool World::remove(int id) {
     }
     return 1;
 }
-bool World::destroy(int id) {
+bool World::destroy(unsigned int id) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
         if(this->objs[i]->id == id && !this->objs.isFree(i)) {
             delete this->objs[i];
@@ -223,7 +239,7 @@ void World::destroyAll() {
         }
     }
 }
-Object* World::getObject(int id) {
+Object* World::getObject(unsigned int id) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
         if(this->objs[i]->id == id && !this->objs.isFree(i)) {
             return this->objs[i];
@@ -257,7 +273,7 @@ void World::generate(int seed, V2f mins, V2f maxs) {
                     int n = rand()%(int)(1/this->thingtypes[i]->generation.occurence);
                     if(n == 1) {
                         Thing* thing = this->createThing(i);
-                        thing->getPos() = {(float)x, (float)y};
+                        thing->pos = {(float)x, (float)y};
                         this->add(thing);
                     }
                 }
@@ -269,7 +285,7 @@ unsigned int World::registerThing(Thing* thing) {
     return this->thingtypes.add(thing);
 }
 Thing* World::createThing(unsigned int type) {
-    if(type >= 0 && type < this->thingtypes.size()) {
+    if(type < this->thingtypes.size()) {
         Thing* temp = this->thingtypes[type];
         Thing* thing = new Thing(temp->health, temp->attack, temp->generation
                                 ,temp->updatef, temp->renderf);
@@ -315,6 +331,17 @@ Shape::Shape(float restitution, float mass, int r, int g, int b, int a) : Shape(
 Shape::Shape(float restitution, float mass, SDL_Surface* texture) : Shape(restitution, mass) {
     this->texture = texture;
     this->texmode = 1;
+    bool loop = 1;
+    for(int x=0; x<this->texture->w && loop; x++) {
+        for(int y=0; y<this->texture->h && loop; y++) {
+            uint8_t r, g, b, a;
+            SDL_GetRGBA(::getPixel(this->texture, x, y), this->texture->format, &r, &g, &b, &a);
+            if(a<255) {
+                this->a = 0;
+                loop = 0;
+            }
+        }
+    }
 }
 Shape::~Shape() {
     this->~Object();
@@ -571,7 +598,7 @@ void Thing::pick() {
     }
 }
 void Thing::drop() {
-    if(bagcurr >= 0 && bagcurr < this->bag.size()) {
+    if(bagcurr < this->bag.size()) {
         this->bag[bagcurr]->pos = this->getPos();
         this->bag[bagcurr]->ori = this->getOri();
         this->bag[bagcurr]->vel = this->getVel();
