@@ -20,22 +20,43 @@
  */
 #ifndef LANGUAGE_H
 #define LANGUAGE_H
+#include <stdlib.h>
+#include <string.h>
 
+class Operator;
+class Variable;
+class Expression;
 struct type_t {
     const char* id;
-    int size;
+    size_t size;
 };
-struct variable_t {
-    const char* id;
-    void* data;
-    type_t type;
+class Variable {
+    public:
+        type_t type;
+        const char* id;
+        void* data;
+        Variable(type_t type, const char* id);
+        Variable(type_t type, const char* id, void* data);
+        virtual ~Variable();
+        virtual Variable* get();
 };
-struct scope_t {
-    type_t* types;
-    int typessize;
-    variable_t* vars;
-    int varssize;
+class Operator : public Variable {
+    public:
+        type_t* lvalue, *rvalue; //NULL - not used
+        Variable* (*evalf)(Variable* lvalue, Variable* rvalue);
+        Operator(const char* id, type_t* lvalue, type_t* rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
+        virtual ~Operator();
+        virtual Variable* eval(Variable* lvalue, Variable* rvalue);
 };
-void execute(scope_t* scope, const char* text);
+class Expression : public Variable {
+    public:
+        Variable* lvalue;
+        Operator* op;
+        Variable* rvalue;
+        Expression(Variable* lvalue, Operator* op, Variable* rvalue);
+        virtual ~Expression();
+        virtual Variable* get();
+};
+void execute(const char* text);
 
 #endif

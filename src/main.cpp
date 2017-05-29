@@ -30,6 +30,7 @@
 #include "renderers.h"
 #include "graphics.h"
 #include "gui.h"
+#include "language.h"
 #define RENDERER 1
 
 #if RENDERER == 1
@@ -37,8 +38,8 @@ Raycaster* renderer;
 #else
 Renderer* renderer;
 #endif
-GUIProgressBar* progressbar;
-GUIFrame* frame;
+/*GUIProgressBar* progressbar;
+GUIFrame* frame;*/
 Object* hero;
 World* game = new World();
 float gmulti = 1;
@@ -93,8 +94,8 @@ void render() {
     SDL_SetRelativeMouseMode((SDL_bool)!pause);
 #endif
     game->render();
-    frame->render(SDL_GetWindowSurface(renderer->window));
-    SDL_UpdateWindowSurface(renderer->window);
+    //frame->render(SDL_GetWindowSurface(renderer->window));
+    //SDL_UpdateWindowSurface(renderer->window);
 }
 int main(int argc, char** argv) {
     std::cout<<"textcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
         std::cout<<"TTF_Init error: "<<TTF_GetError()<<'\n';
         stop(1);
     }
+    execute("5+5*2;");
     //help();
     /*game->registerThing(new Thing(8, 1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
     game->registerThing(new Thing(4, 1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
@@ -152,7 +154,7 @@ int main(int argc, char** argv) {
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //Bread
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //RawMeat
     game->registerThing(new Thing(0, 0, {0, 0}, NULL, Thing::defaultRenderf)); //CookedMeat
-    TTF_Font* font = TTF_OpenFont("gfx/fonts/FSEX300.ttf", 16);
+    /*TTF_Font* font = TTF_OpenFont("gfx/fonts/FSEX300.ttf", 16);
     frame = (GUIFrame*)(new GUIFrame())->setBGColor({191, 191, 191, 255})->setBounds(0, 0, 100, 100);
     progressbar = (GUIProgressBar*)(new GUIProgressBar())->setBounds(0, 50, 100, 50)->setBGColor({191, 191, 191, 255})->setFGColor({0, 255, 0, 255});
     GUIButton* widget = (GUIButton*)(new GUIButton())->setBGColor({191, 191, 191, 255})->setBounds(0, 0, 100, 50)->setEventListener(
@@ -163,7 +165,7 @@ int main(int argc, char** argv) {
     });
     widget->add((new GUILabel(font, "GUIButton"))->setBounds(0, 0, 100, 50));
     frame->add(progressbar);
-    frame->add(widget);
+    frame->add(widget);*/
 #if RENDERER == 1
     renderer = new Raycaster("textcraft 1.0", 800/2, 600/2);
     std::ifstream cfg("cfg.dat"); //TODO: make a better parser
@@ -307,7 +309,7 @@ int main(int argc, char** argv) {
                         running = 0;
                         break;
                 }
-                frame->processEvent(event);
+                //frame->processEvent(event);
             }
             now = KL_getMS();
             if(!pause) update((double)(now-lastUpdate)/1000);
