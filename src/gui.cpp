@@ -147,7 +147,6 @@ GUIFrame::GUIFrame() : GUIWidget() {
     this->family.pushBack("GUIFrame");
 }
 GUIFrame::~GUIFrame() {
-    this->~GUIWidget();
 }
 void GUIFrame::update(float delta) {
     GUIWidget::update(delta);
@@ -193,7 +192,6 @@ GUILabel::GUILabel(TTF_Font* font, const char* text) : GUIWidget() {
     this->text = text;
 }
 GUILabel::~GUILabel() {
-    this->~GUIWidget();
 }
 GUILabel* GUILabel::setFont(TTF_Font* font) {
     this->font = font;
@@ -237,7 +235,6 @@ void GUILabel::render(SDL_Surface* surface) {
 GUIButton::GUIButton() : GUIFrame() {
 }
 GUIButton::~GUIButton() {
-    this->~GUIFrame();
 }
 void GUIButton::render(SDL_Surface* surface) {
     GUIWidget::render(surface);
@@ -311,7 +308,6 @@ GUIProgressBar::GUIProgressBar() : GUIWidget() {
     this->progress = 0;
 }
 GUIProgressBar::~GUIProgressBar() {
-    this->~GUIWidget();
 }
 GUIProgressBar* GUIProgressBar::setProgress(float progress) {
     this->progress = progress;

@@ -19,7 +19,7 @@
 SD=./src
 BD=./build
 CC=g++
-CCFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++11 -ggdb -O0 -I. -I./karolslib/src
+CCFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. -I./karolslib/src
 LD=$(CC)
 #For linux:
 LDFLAGS=

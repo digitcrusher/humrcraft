@@ -48,7 +48,6 @@ Circle::Circle(float radius, float restitution, float mass, SDL_Surface* texture
     this->radius = radius;
 }
 Circle::~Circle() {
-    this->~Shape();
 }
 void Circle::render(Renderer* renderer) {
     Shape::render(renderer);
@@ -81,7 +80,6 @@ Square::Square(float sidelen, float restitution, float mass, SDL_Surface* textur
     this->sidelen = sidelen;
 }
 Square::~Square() {
-    this->~Shape();
 }
 void Square::render(Renderer* renderer) {
     Shape::render(renderer);

@@ -46,26 +46,10 @@ float gmulti = 1;
 bool pause = 1;
 bool running = 1;
 void stop(int status) {
+    TTF_Quit();
     SDL_Quit();
     exit(status);
 }
-char* KL_encode(char* str, unsigned int size, int pass) {
-    char* result=(char*)malloc(sizeof(char)*size+1);
-    for(unsigned int i=0; i<size; i++) {
-        result[i] = (float)i/2==(int)i/2 ? str[i]+(i*pass) : str[i]-(i*pass);
-    }
-    result[size] = '\0';
-    return result;
-}
-char* KL_decode(char* str, unsigned int size, int pass) {
-    char* result=(char*)malloc(sizeof(char)*size+1);
-    for(unsigned int i=0; i<size; i++) {
-        result[i] = (float)i/2==(int)i/2 ? str[i]-(i*pass) : str[i]+(i*pass);
-    }
-    result[size] = '\0';
-    return result;
-}
-
 void update(double delta) {
     game->update(delta);
     for(unsigned int i=0; i<game->objs.size(); i++) {
@@ -110,8 +94,7 @@ int main(int argc, char** argv) {
         std::cout<<"TTF_Init error: "<<TTF_GetError()<<'\n';
         stop(1);
     }
-    execute("5+5*2;");
-    //help();
+    execute("8+2/(5+1)-3*65;");
     /*game->registerThing(new Thing(8, 1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
     game->registerThing(new Thing(4, 1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
     game->registerThing(new Thing(1, 0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick

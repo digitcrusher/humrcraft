@@ -22,6 +22,7 @@
 #define LANGUAGE_H
 #include <stdlib.h>
 #include <string.h>
+#define INT_TYPE {"int", sizeof(int)}
 
 class Operator;
 class Variable;
@@ -42,9 +43,10 @@ class Variable {
 };
 class Operator : public Variable {
     public:
+        int priority;
         type_t* lvalue, *rvalue; //NULL - not used
         Variable* (*evalf)(Variable* lvalue, Variable* rvalue);
-        Operator(const char* id, type_t* lvalue, type_t* rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
+        Operator(const char* id, int priority, type_t* lvalue, type_t* rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
         virtual ~Operator();
         virtual Variable* eval(Variable* lvalue, Variable* rvalue);
 };

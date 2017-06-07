@@ -166,7 +166,6 @@ World::World() : Object(NULL){
     this->family.pushBack("World");
 }
 World::~World() {
-    this->~Object();
 }
 void World::update(double delta) {
     Object::update(delta);
@@ -344,7 +343,6 @@ Shape::Shape(float restitution, float mass, SDL_Surface* texture) : Shape(restit
     }
 }
 Shape::~Shape() {
-    this->~Object();
 }
 void Shape::update(double delta) {
     Object::update(delta);
@@ -414,7 +412,6 @@ Renderer::Renderer(const char* title, int w, int h) : Object(NULL) {
     this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
 }
 Renderer::~Renderer() {
-    this->~Object();
     /*free(this->zbuff);
     free(this->screen);*/
     SDL_DestroyWindow(this->window);
@@ -549,7 +546,6 @@ Thing::Thing(float health, float attack, genSettings generation
     this->renderf = renderf;
 }
 Thing::~Thing() {
-    this->~Object();
     if(this->world) {
         for(unsigned int i=0; i<this->bag.size(); i++) {
             this->bagcurr = i;

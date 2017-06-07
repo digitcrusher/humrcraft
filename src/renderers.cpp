@@ -30,16 +30,13 @@ Raycaster::Raycaster(const char* title, int w, int h) : Renderer(title, w, h) {
     this->fos = 25;
 }
 Raycaster::~Raycaster() {
-    this->~Renderer();
 }
 void Raycaster::begin() {
     Renderer::begin();
 }
 void Raycaster::end() {
-    int start = KL_getMS();
     this->raycast(0, this->buffer->w);
     Renderer::end();
-    std::cout<<KL_getMS()-start<<'\n';
 }
 void Raycaster::raycast(int sx, int ex) {
     //int fogr=0, fogg=0, fogb=0;
