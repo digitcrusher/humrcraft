@@ -114,7 +114,7 @@ size_t floatlen(float x) {
     }
     return len+(x<0)+((int)x!=x);
 }
-bool stof(char* str, float* ret) {
+bool stof(const char* str, float* ret) {
     int len=strlen(str);
     bool neg=0;
     bool floatpoint=0;
@@ -156,7 +156,7 @@ bool stof(char* str, float* ret) {
     *ret = num;
     return 0;
 }
-bool stoi(char* str, int* ret) {
+bool stoi(const char* str, int* ret) {
     int len=strlen(str);
     bool neg=0;
     int num=0;
@@ -185,7 +185,7 @@ bool stoi(char* str, int* ret) {
     *ret = num;
     return 0;
 }
-bool stoui(char* str, unsigned int* ret) {
+bool stoui(const char* str, unsigned int* ret) {
     int len=strlen(str);
     unsigned int num=0;
     char* whole=(char*)malloc(sizeof(char)*len);
@@ -365,3 +365,19 @@ int htoi(char* hex) {
     strcpy(result+len, msg);
     return result;
 }*/
+char* KL_encode(const char* str, unsigned int size, int pass) {
+    char* result=(char*)malloc(sizeof(char)*size+1);
+    for(unsigned int i=0; i<size; i++) {
+        result[i] = (float)i/2==(int)i/2 ? str[i]+(i*pass) : str[i]-(i*pass);
+    }
+    result[size] = '\0';
+    return result;
+}
+char* KL_decode(const char* str, unsigned int size, int pass) {
+    char* result=(char*)malloc(sizeof(char)*size+1);
+    for(unsigned int i=0; i<size; i++) {
+        result[i] = (float)i/2==(int)i/2 ? str[i]-(i*pass) : str[i]+(i*pass);
+    }
+    result[size] = '\0';
+    return result;
+}

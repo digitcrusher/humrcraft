@@ -1,5 +1,5 @@
 /*
- * language.cpp
+ * language.cpp C-like Interpreted Programming Language
  * textcraft Source Code
  * Available on Github
  *
@@ -23,6 +23,8 @@
 #include <utils/utils.h>
 #include "language.h"
 
+type_t inttype = {"int", sizeof(int)};
+
 Variable::Variable(type_t type, const char* id) {
     this->type = type;
     this->id = id;
@@ -40,8 +42,9 @@ Variable* Variable::get() {
     return this;
 }
 
-Operator::Operator(const char* id, int priority, type_t* lvalue, type_t* rvalue
+Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue
                   ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable({"operator", sizeof(Operator)}, id) {
+    this->postfix = 0;
     this->priority = priority;
     this->lvalue = lvalue;
     this->rvalue = rvalue;
@@ -51,7 +54,7 @@ Operator::~Operator() {
 }
 Variable* Operator::eval(Variable* lvalue, Variable* rvalue) {
     if(this->evalf) {
-        return this->evalf(lvalue, rvalue);
+        return this->evalf(lvalue->get(), rvalue->get());
     }
     return NULL;
 }
@@ -60,58 +63,85 @@ Expression::Expression(Variable* lvalue, Operator* op, Variable* rvalue) : Varia
     this->lvalue = lvalue;
     this->op = op;
     this->rvalue = rvalue;
+    this->cache = NULL;
 }
 Expression::~Expression() {
+    if(this->op && this->op->postfix) {
+        this->cache = this->op->eval(this->lvalue->get(), this->rvalue->get());
+    }
     delete this->lvalue;
     delete this->rvalue;
+    if(this->cache) {
+        delete this->cache;
+    }
 }
 Variable* Expression::get() {
-    return this->op->eval(this->lvalue->get(), this->rvalue->get());
+    if(this->op && !this->cache) {
+        if(!this->op->postfix) {
+            this->cache = this->op->eval(this->lvalue->get(), this->rvalue->get());
+        }else {
+            if(this->op->uselvalue) {
+                this->cache = this->lvalue->get();
+            }else {
+                this->cache = this->rvalue->get();
+            }
+        }
+    }
+    return this->cache;
+}
+void Expression::clearCache() {
+    if(this->cache) {
+        delete this->cache;
+        this->cache = NULL;
+    }
 }
 
-type_t types[] = {INT_TYPE};
-Operator* ops[] = {new Operator("+", 1, &types[0], &types[0], [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue && rvalue) {
-        if(!strcmp(lvalue->type.id, types[0].id) && !strcmp(rvalue->type.id, types[0].id) && lvalue->type.size == sizeof(int) && rvalue->type.size == sizeof(int)) {
+bool varcmp(Variable* var, type_t type) {
+    return !strcmp(var->get()->type.id, type.id) && var->get()->type.size == type.size;
+}
+
+Operator* ops[] = {new Operator("+", 1, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
+    if(lvalue->get() && rvalue->get()) {
+        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
             int* result = (int*)malloc(sizeof(int));
             *result =  *(int*)lvalue->get()->data + *(int*)rvalue->get()->data;
-            Variable* var = new Variable(types[0], "", result);
+            Variable* var = new Variable(inttype, "", result);
             return var;
         }
     }
     return (Variable*)NULL;
-}), new Operator("-", 1, &types[0], &types[0], [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue && rvalue) {
-        if(!strcmp(lvalue->type.id, types[0].id) && !strcmp(rvalue->type.id, types[0].id) && lvalue->type.size == sizeof(int) && rvalue->type.size == sizeof(int)) {
+}), new Operator("-", 1, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
+    if(lvalue->get() && rvalue->get()) {
+        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
             int* result = (int*)malloc(sizeof(int));
             *result =  *(int*)lvalue->get()->data - *(int*)rvalue->get()->data;
-            Variable* var = new Variable(types[0], "", result);
+            Variable* var = new Variable(inttype, "", result);
             return var;
         }
     }
     return (Variable*)NULL;
-}), new Operator("*", 2, &types[0], &types[0], [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue && rvalue) {
-        if(!strcmp(lvalue->type.id, types[0].id) && !strcmp(rvalue->type.id, types[0].id) && lvalue->type.size == sizeof(int) && rvalue->type.size == sizeof(int)) {
+}), new Operator("*", 2, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
+    if(lvalue->get() && rvalue->get()) {
+        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
             int* result = (int*)malloc(sizeof(int));
             *result =  *(int*)lvalue->get()->data * *(int*)rvalue->get()->data;
-            Variable* var = new Variable(types[0], "", result);
+            Variable* var = new Variable(inttype, "", result);
             return var;
         }
     }
     return (Variable*)NULL;
-}), new Operator("/", 2, &types[0], &types[0], [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue && rvalue) {
-        if(!strcmp(lvalue->type.id, types[0].id) && !strcmp(rvalue->type.id, types[0].id) && lvalue->type.size == sizeof(int) && rvalue->type.size == sizeof(int)) {
+}), new Operator("/", 2, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
+    if(lvalue->get() && rvalue->get()) {
+        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
             int* result = (int*)malloc(sizeof(int));
             *result =  *(int*)lvalue->get()->data / *(int*)rvalue->get()->data;
-            Variable* var = new Variable(types[0], "", result);
+            Variable* var = new Variable(inttype, "", result);
             return var;
         }
     }
     return (Variable*)NULL;
 })};
-auto checkGroup = [](char c) {
+int checkGroup(char c) {
     /* 0 - space
      * 1 - op
      * 2 - num
@@ -136,7 +166,7 @@ auto checkGroup = [](char c) {
         return 3;
     }
     return -1;
-};
+}
 Variable* parse(const char** tokens, size_t size) {
     Variable* lvalue = NULL;
     Operator* op = NULL;
@@ -146,15 +176,22 @@ Variable* parse(const char** tokens, size_t size) {
         if(group != 1) {
             if(group == 5) {
                 int start = ++i;
-                while(i<size) {
+                int paranthesis = 1;
+                while(i < size) {
                     group = checkGroup(tokens[i][0]);
+                    if(group == 5) {
+                        paranthesis++;
+                    }
                     if(group == 6) {
+                        paranthesis--;
+                    }
+                    if(paranthesis < 1) {
                         break;
                     }
                     i++;
                 }
                 if(i == size) {
-                    std::cout<<"expected closing paranthesis before end of statement\n";
+                    std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
                     return NULL;
                 }
                 lvalue = parse(tokens+start, i-start);
@@ -165,7 +202,7 @@ Variable* parse(const char** tokens, size_t size) {
                 }
                 switch(group) {
                     case 2:
-                        lvalue = new Variable(INT_TYPE, "");
+                        lvalue = new Variable(inttype, "");
                         if(stoi(tokens[i], (int*)lvalue->data)) {
                             std::cout<<"interpreter error\n";
                             return NULL;
@@ -184,19 +221,19 @@ Variable* parse(const char** tokens, size_t size) {
                     return NULL;
                 }
             }
-            if(op->lvalue) {
+            if(op->uselvalue) {
                 if(lvalue) {
-                    if(strcmp(lvalue->get()->type.id, op->lvalue->id)) {
-                        std::cout<<"operator "<<op->id<<" requires "<<op->lvalue->id<<" as lvalue\n";
+                    if(strcmp(lvalue->get()->type.id, op->lvalue.id)) {
+                        std::cout<<"operator "<<op->id<<" requires "<<op->lvalue.id<<" as lvalue\n";
                         return NULL;
                     }
                 }else {
-                    std::cout<<"operator "<<op->id<<" needs "<<op->lvalue->id<<" as lvalue\n";
+                    std::cout<<"operator "<<op->id<<" needs "<<op->lvalue.id<<" as lvalue\n";
                     return NULL;
                 }
             }else {
                 if(lvalue) {
-                    if(strcmp(lvalue->get()->type.id, op->lvalue->id)) {
+                    if(strcmp(lvalue->get()->type.id, op->lvalue.id)) {
                         std::cout<<"operator "<<op->id<<" requires not a lvalue\n";
                         return NULL;
                     }
@@ -220,15 +257,22 @@ Variable* parse(const char** tokens, size_t size) {
                     }
                     priority = op2->priority;
                 }else if(group == 5) {
-                    while(i<size) {
+                    int paranthesis = 0;
+                    while(i < size) {
                         group = checkGroup(tokens[i][0]);
+                        if(group == 5) {
+                            paranthesis++;
+                        }
                         if(group == 6) {
+                            paranthesis--;
+                        }
+                        if(paranthesis < 1) {
                             break;
                         }
                         i++;
                     }
                     if(i == size) {
-                        std::cout<<"expected closing paranthesis before end of statement\n";
+                        std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
                         return NULL;
                     }
                 }
@@ -239,19 +283,19 @@ Variable* parse(const char** tokens, size_t size) {
             }
             rvalue = parse(tokens+start, i-start);
             i--;
-            if(op->rvalue) {
+            if(op->uservalue) {
                 if(rvalue) {
-                    if(strcmp(rvalue->get()->type.id, op->rvalue->id)) {
-                        std::cout<<"operator "<<op->id<<" requires "<<op->rvalue->id<<" as rvalue\n";
+                    if(strcmp(rvalue->get()->type.id, op->rvalue.id)) {
+                        std::cout<<"operator "<<op->id<<" requires "<<op->rvalue.id<<" as rvalue\n";
                         return NULL;
                     }
                 }else {
-                    std::cout<<"operator "<<op->id<<" needs "<<op->rvalue->id<<" as rvalue\n";
+                    std::cout<<"operator "<<op->id<<" needs "<<op->rvalue.id<<" as rvalue\n";
                     return NULL;
                 }
             }else {
                 if(rvalue) {
-                    if(strcmp(rvalue->get()->type.id, op->rvalue->id)) {
+                    if(strcmp(rvalue->get()->type.id, op->rvalue.id)) {
                         std::cout<<"operator "<<op->id<<" requires not a rvalue\n";
                         return NULL;
                     }
@@ -267,7 +311,7 @@ void execute(const char* text) {
     std::vector<std::string*> tokens;
     int group=-1;
     for(unsigned int i=0, j = -1; i<strlen(text); i++) {
-        if(group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) {
+        if((group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) || checkGroup(text[i]) == 5 || checkGroup(text[i]) == 6) {
             if(checkGroup(text[i]) == 4) {
                 break;
             }

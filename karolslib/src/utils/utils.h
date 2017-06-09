@@ -37,14 +37,16 @@ int indexof(const char* string, char search); //Search string for search
 size_t intlen(int x); //How many digits in x?
 size_t uintlen(unsigned int x); //How many digits in x?
 size_t floatlen(float x); //How many digits in x?
-bool stof(char* str, float* ret); //Convert str to a float
-bool stoi(char* str, int* ret); //Convert str to an int
-bool stoui(char* str, unsigned int* ret); //Convert str to an unsigned int
+bool stof(const char* str, float* ret); //Convert str to a float
+bool stoi(const char* str, int* ret); //Convert str to an int
+bool stoui(const char* str, unsigned int* ret); //Convert str to an unsigned int
 char* itos(int x); //Convert int to string
 char* uitos(unsigned int x); //Convert unsigned int to string
 char* ftos(float x); //Convert float to string
 int htoi(char* hex); //Convert hex string to int
 //char* itos(int input, char* msg); //Convert int to string and concatenate msg to the end !!!!!NOT USED!!!!!
+char* KL_encode(const char* str, unsigned int size, int pass);
+char* KL_decode(const char* str, unsigned int size, int pass);
 
 template<typename T> class KL_Vector {
     private:

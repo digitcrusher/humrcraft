@@ -1,5 +1,5 @@
 /*
- * language.h
+ * language.h C-like Interpreted Programming Language
  * textcraft Source Code
  * Available on Github
  *
@@ -22,7 +22,6 @@
 #define LANGUAGE_H
 #include <stdlib.h>
 #include <string.h>
-#define INT_TYPE {"int", sizeof(int)}
 
 class Operator;
 class Variable;
@@ -43,10 +42,12 @@ class Variable {
 };
 class Operator : public Variable {
     public:
+        bool postfix;
         int priority;
-        type_t* lvalue, *rvalue; //NULL - not used
+        type_t lvalue, rvalue;
+        bool uselvalue, uservalue;
         Variable* (*evalf)(Variable* lvalue, Variable* rvalue);
-        Operator(const char* id, int priority, type_t* lvalue, type_t* rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
+        Operator(const char* id, int priority, type_t lvalue, type_t rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
         virtual ~Operator();
         virtual Variable* eval(Variable* lvalue, Variable* rvalue);
 };
@@ -55,10 +56,21 @@ class Expression : public Variable {
         Variable* lvalue;
         Operator* op;
         Variable* rvalue;
+        Variable* cache;
         Expression(Variable* lvalue, Operator* op, Variable* rvalue);
         virtual ~Expression();
         virtual Variable* get();
+        virtual void clearCache();
 };
+class Scope {
+    public:
+        Scope();
+        virtual ~Scope();
+};
+
+extern type_t inttype;
+
+Variable* parse(const char** tokens, size_t size);
 void execute(const char* text);
 
 #endif
