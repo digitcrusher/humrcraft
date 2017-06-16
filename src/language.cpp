@@ -19,35 +19,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <iostream>
-#include <vector>
 #include <utils/utils.h>
 #include "language.h"
 
-type_t inttype = {"int", sizeof(int)};
+type_t voidtype = {"void", sizeof(void), 0};
+type_t inttype = {"int", sizeof(int), 1};
+type_t pointertype = {"pointer", sizeof(void*), 1};
 
-Variable::Variable(type_t type, const char* id) {
-    this->type = type;
-    this->id = id;
-    this->data = malloc(this->type.size);
-}
 Variable::Variable(type_t type, const char* id, void* data) {
     this->type = type;
     this->id = id;
     this->data = data;
+    this->cache = NULL;
+}
+Variable::Variable(type_t type, const char* id) : Variable(type, id, malloc(type.size)) {
 }
 Variable::~Variable() {
     free(this->data);
 }
 Variable* Variable::get() {
-    return this;
+    if(!this->cache) {
+        this->cache = this;
+    }
+    return this->cache;
+}
+void Variable::clearCache() {
+    this->cache = NULL;
 }
 
-Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue
-                  ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable({"operator", sizeof(Operator)}, id) {
+Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue
+                  ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable({"operator", sizeof(Operator), 0}, id) {
     this->postfix = 0;
     this->priority = priority;
     this->lvalue = lvalue;
     this->rvalue = rvalue;
+    this->uselvalue = uselvalue;
+    this->uservalue = uservalue;
     this->evalf = evalf;
 }
 Operator::~Operator() {
@@ -59,19 +66,22 @@ Variable* Operator::eval(Variable* lvalue, Variable* rvalue) {
     return NULL;
 }
 
-Expression::Expression(Variable* lvalue, Operator* op, Variable* rvalue) : Variable({"expression", sizeof(Expression)}, "") {
+Expression::Expression(Variable* lvalue, Operator* op, Variable* rvalue) : Variable({"expression", sizeof(Expression), 0}, "") {
     this->lvalue = lvalue;
     this->op = op;
     this->rvalue = rvalue;
-    this->cache = NULL;
 }
 Expression::~Expression() {
     if(this->op && this->op->postfix) {
         this->cache = this->op->eval(this->lvalue->get(), this->rvalue->get());
     }
-    delete this->lvalue;
-    delete this->rvalue;
-    if(this->cache) {
+    if(this->lvalue && !this->lvalue->scope) {
+        delete this->lvalue;
+    }
+    if(this->rvalue && !this->rvalue->scope) {
+        delete this->rvalue;
+    }
+    if(this->cache && !this->cache->scope) {
         delete this->cache;
     }
 }
@@ -89,58 +99,13 @@ Variable* Expression::get() {
     }
     return this->cache;
 }
-void Expression::clearCache() {
-    if(this->cache) {
-        delete this->cache;
-        this->cache = NULL;
-    }
-}
 
+bool typecmp(type_t type, type_t type2) {
+    return (!strcmp(type.id, type2.id) && type.size == type2.size) || (type.number && type2.number);
+}
 bool varcmp(Variable* var, type_t type) {
-    return !strcmp(var->get()->type.id, type.id) && var->get()->type.size == type.size;
+    return typecmp(var->type, type);
 }
-
-Operator* ops[] = {new Operator("+", 1, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue->get() && rvalue->get()) {
-        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
-            int* result = (int*)malloc(sizeof(int));
-            *result =  *(int*)lvalue->get()->data + *(int*)rvalue->get()->data;
-            Variable* var = new Variable(inttype, "", result);
-            return var;
-        }
-    }
-    return (Variable*)NULL;
-}), new Operator("-", 1, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue->get() && rvalue->get()) {
-        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
-            int* result = (int*)malloc(sizeof(int));
-            *result =  *(int*)lvalue->get()->data - *(int*)rvalue->get()->data;
-            Variable* var = new Variable(inttype, "", result);
-            return var;
-        }
-    }
-    return (Variable*)NULL;
-}), new Operator("*", 2, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue->get() && rvalue->get()) {
-        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
-            int* result = (int*)malloc(sizeof(int));
-            *result =  *(int*)lvalue->get()->data * *(int*)rvalue->get()->data;
-            Variable* var = new Variable(inttype, "", result);
-            return var;
-        }
-    }
-    return (Variable*)NULL;
-}), new Operator("/", 2, inttype, inttype, [](Variable* lvalue, Variable* rvalue) {
-    if(lvalue->get() && rvalue->get()) {
-        if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
-            int* result = (int*)malloc(sizeof(int));
-            *result =  *(int*)lvalue->get()->data / *(int*)rvalue->get()->data;
-            Variable* var = new Variable(inttype, "", result);
-            return var;
-        }
-    }
-    return (Variable*)NULL;
-})};
 int checkGroup(char c) {
     /* 0 - space
      * 1 - op
@@ -167,63 +132,164 @@ int checkGroup(char c) {
     }
     return -1;
 }
-Variable* parse(const char** tokens, size_t size) {
+Scope::Scope() {
+    this->types.push_back(voidtype);
+    this->types.push_back(inttype);
+    this->types.push_back(pointertype);
+    this->ops.push_back(new Operator("=", 0, inttype, inttype, 1, 1, [](Variable* lvalue, Variable* rvalue) {
+        if(lvalue->get() && rvalue->get()) {
+            if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
+                *(int*)lvalue->get()->data = *(int*)rvalue->get()->data;
+                return lvalue;
+            }
+        }
+        return lvalue;
+    }));
+    this->ops.push_back(new Operator("+", 1, inttype, inttype, 1, 1, [](Variable* lvalue, Variable* rvalue) {
+        if(lvalue->get() && rvalue->get()) {
+            if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
+                int* result = (int*)malloc(sizeof(int));
+                *result = *(int*)lvalue->get()->data + *(int*)rvalue->get()->data;
+                Variable* var = new Variable(inttype, "", result);
+                return var;
+            }
+        }
+        return (Variable*)NULL;
+    }));
+    this->ops.push_back(new Operator("-", 1, inttype, inttype, 1, 1, [](Variable* lvalue, Variable* rvalue) {
+        if(lvalue->get() && rvalue->get()) {
+            if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
+                int* result = (int*)malloc(sizeof(int));
+                *result = *(int*)lvalue->get()->data - *(int*)rvalue->get()->data;
+                Variable* var = new Variable(inttype, "", result);
+                return var;
+            }
+        }
+        return (Variable*)NULL;
+    }));
+    this->ops.push_back(new Operator("*", 2, inttype, inttype, 1, 1, [](Variable* lvalue, Variable* rvalue) {
+        if(lvalue->get() && rvalue->get()) {
+            if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
+                int* result = (int*)malloc(sizeof(int));
+                *result = *(int*)lvalue->get()->data * *(int*)rvalue->get()->data;
+                Variable* var = new Variable(inttype, "", result);
+                return var;
+            }
+        }
+        return (Variable*)NULL;
+    }));
+    this->ops.push_back(new Operator("/", 2, inttype, inttype, 1, 1, [](Variable* lvalue, Variable* rvalue) {
+        if(lvalue->get() && rvalue->get()) {
+            if(varcmp(lvalue, inttype) && varcmp(rvalue, inttype)) {
+                int* result = (int*)malloc(sizeof(int));
+                *result = *(int*)lvalue->get()->data / *(int*)rvalue->get()->data;
+                Variable* var = new Variable(inttype, "", result);
+                return var;
+            }
+        }
+        return (Variable*)NULL;
+    }));
+}
+Scope::~Scope() {
+}
+void Scope::add(Variable* var) {
+    this->vars.push_back(var);
+    var->scope = this;
+}
+Variable* Scope::parse(const char** tokens, size_t size) {
     Variable* lvalue = NULL;
     Operator* op = NULL;
     Variable* rvalue = NULL;
     for(unsigned int i=0; i<size; i++) {
         int group = checkGroup(tokens[i][0]);
         if(group != 1) {
-            if(group == 5) {
-                int start = ++i;
-                int paranthesis = 1;
-                while(i < size) {
-                    group = checkGroup(tokens[i][0]);
-                    if(group == 5) {
-                        paranthesis++;
+            if(lvalue) {
+                std::cout<<"expected an operator\n";
+                return NULL;
+            }
+            switch(group) {
+                case 2:
+                    lvalue = new Variable(inttype, "");
+                    if(stoi(tokens[i], (int*)lvalue->data)) {
+                        std::cout<<"interpreter error\n";
+                        return NULL;
                     }
-                    if(group == 6) {
-                        paranthesis--;
+                    break;
+                case 3: {
+                    type_t* type = NULL;
+                    for(unsigned int j=0; j<this->types.size(); j++) {
+                        if(!strcmp(this->types[j].id, tokens[i])) {
+                            type = &this->types[j];
+                            break;
+                        }
                     }
-                    if(paranthesis < 1) {
-                        break;
-                    }
-                    i++;
-                }
-                if(i == size) {
-                    std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
-                    return NULL;
-                }
-                lvalue = parse(tokens+start, i-start);
-            }else {
-                if(lvalue) {
-                    std::cout<<"expected an operator\n";
-                    return NULL;
-                }
-                switch(group) {
-                    case 2:
-                        lvalue = new Variable(inttype, "");
-                        if(stoi(tokens[i], (int*)lvalue->data)) {
-                            std::cout<<"interpreter error\n";
+                    if(type) {
+                        for(i++; i < size; i++) {
+                            if(checkGroup(tokens[i][0]) == 3) {
+                                break;
+                            }
+                        }
+                        for(unsigned int j=0; j<this->vars.size(); j++) {
+                            if(!strcmp(this->vars[j]->id, tokens[i])) {
+                                std::cout<<"redefinition of variable "<<this->vars[j]->id<<'\n';
+                                return NULL;
+                                break;
+                            }
+                        }
+                        char* id = (char*)malloc(sizeof(char)*(strlen(tokens[i])+1));
+                        strcpy(id, tokens[i]);
+                        this->add(new Variable(*type, id));
+                        lvalue = this->vars[this->vars.size()-1];
+                    }else {
+                        for(unsigned int j=0; j<this->vars.size(); j++) {
+                            if(!strcmp(this->vars[j]->id, tokens[i])) {
+                                lvalue = this->vars[j];
+                                break;
+                            }
+                        }
+                        if(!lvalue) {
+                            std::cout<<"unidentified variable "<<tokens[i]<<'\n';
                             return NULL;
                         }
-                        break;
-                }
+                    }
+                    }break;
+                case 5:
+                    int start = ++i;
+                    int paranthesis = 1;
+                    while(i < size) {
+                        group = checkGroup(tokens[i][0]);
+                        if(group == 5) {
+                            paranthesis++;
+                        }
+                        if(group == 6) {
+                            paranthesis--;
+                        }
+                        if(paranthesis < 1) {
+                            break;
+                        }
+                        i++;
+                    }
+                    if(i == size) {
+                        std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
+                        return NULL;
+                    }
+                    lvalue = this->parse(tokens+start, i-start);
+                    break;
             }
         }else {
-            for(int j=0; j<4; j++) {
-                if(!strcmp(ops[j]->id, tokens[i])) {
-                    op = ops[j];
+            for(unsigned int j=0; j<this->ops.size(); j++) {
+                if(!strcmp(this->ops[j]->id, tokens[i])) {
+                    op = this->ops[j];
                     break;
                 }
-                if(j == 4-1) {
-                    std::cout<<"unidentified operator "<<tokens[i]<<'\n';
-                    return NULL;
-                }
+            }
+            if(!op) {
+                std::cout<<"unidentified operator "<<tokens[i]<<'\n';
+                return NULL;
             }
             if(op->uselvalue) {
-                if(lvalue) {
-                    if(strcmp(lvalue->get()->type.id, op->lvalue.id)) {
+                if(lvalue->get()) {
+                    if(!typecmp(lvalue->get()->type, op->lvalue)) {
                         std::cout<<"operator "<<op->id<<" requires "<<op->lvalue.id<<" as lvalue\n";
                         return NULL;
                     }
@@ -231,13 +297,9 @@ Variable* parse(const char** tokens, size_t size) {
                     std::cout<<"operator "<<op->id<<" needs "<<op->lvalue.id<<" as lvalue\n";
                     return NULL;
                 }
-            }else {
-                if(lvalue) {
-                    if(strcmp(lvalue->get()->type.id, op->lvalue.id)) {
-                        std::cout<<"operator "<<op->id<<" requires not a lvalue\n";
-                        return NULL;
-                    }
-                }
+            }else if(lvalue->get()) {
+                std::cout<<"operator "<<op->id<<" doesn't need a lvalue\n";
+                return NULL;
             }
             int start = ++i;
             int priority = (unsigned int)~0>>1;
@@ -245,15 +307,15 @@ Variable* parse(const char** tokens, size_t size) {
                 group = checkGroup(tokens[i][0]);
                 if(group == 1) {
                     Operator* op2;
-                    for(int j=0; j<4; j++) {
-                        if(!strcmp(ops[j]->id, tokens[i])) {
-                            op2 = ops[j];
+                    for(unsigned int j=0; j<this->ops.size(); j++) {
+                        if(!strcmp(this->ops[j]->id, tokens[i])) {
+                            op2 = this->ops[j];
                             break;
                         }
-                        if(j == 4-1) {
-                            std::cout<<"unidentified operator "<<tokens[i]<<'\n';
-                            return NULL;
-                        }
+                    }
+                    if(!op2) {
+                        std::cout<<"unidentified operator "<<tokens[i]<<'\n';
+                        return NULL;
                     }
                     priority = op2->priority;
                 }else if(group == 5) {
@@ -281,11 +343,11 @@ Variable* parse(const char** tokens, size_t size) {
                 }
                 i++;
             }
-            rvalue = parse(tokens+start, i-start);
+            rvalue = this->parse(tokens+start, i-start);
             i--;
             if(op->uservalue) {
-                if(rvalue) {
-                    if(strcmp(rvalue->get()->type.id, op->rvalue.id)) {
+                if(rvalue->get()) {
+                    if(!typecmp(rvalue->get()->type, op->rvalue)) {
                         std::cout<<"operator "<<op->id<<" requires "<<op->rvalue.id<<" as rvalue\n";
                         return NULL;
                     }
@@ -293,49 +355,48 @@ Variable* parse(const char** tokens, size_t size) {
                     std::cout<<"operator "<<op->id<<" needs "<<op->rvalue.id<<" as rvalue\n";
                     return NULL;
                 }
-            }else {
-                if(rvalue) {
-                    if(strcmp(rvalue->get()->type.id, op->rvalue.id)) {
-                        std::cout<<"operator "<<op->id<<" requires not a rvalue\n";
-                        return NULL;
-                    }
-                }
+            }else if(rvalue->get()) {
+                std::cout<<"operator "<<op->id<<" doesn't need a rvalue\n";
+                return NULL;
             }
             lvalue = new Expression(lvalue, op, rvalue);
         }
     }
     return lvalue;
 }
-void execute(const char* text) {
-    //Lexer
-    std::vector<std::string*> tokens;
-    int group=-1;
-    for(unsigned int i=0, j = -1; i<strlen(text); i++) {
-        if((group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) || checkGroup(text[i]) == 5 || checkGroup(text[i]) == 6) {
-            if(checkGroup(text[i]) == 4) {
-                break;
+void Scope::execute(const char* text) {
+    for(unsigned int i=0; i<strlen(text); i++) {
+        //Lexer
+        std::vector<std::string*>* tokens = new std::vector<std::string*>;
+        int group=-1;
+        for(unsigned int j = -1; i<strlen(text); i++) {
+            if((group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) || checkGroup(text[i]) == 5 || checkGroup(text[i]) == 6) {
+                if(checkGroup(text[i]) == 4) {
+                    break;
+                }
+                if(checkGroup(text[i]) != 0) {
+                    tokens->push_back(new std::string());
+                    j++;
+                }
+                group = checkGroup(text[i]);
             }
-            if(checkGroup(text[i]) != 0) {
-                tokens.push_back(new std::string());
-                j++;
+            if(group != 0) {
+                (*tokens)[j]->push_back(text[i]);
             }
-            group = checkGroup(text[i]);
         }
-        if(group != 0) {
-            tokens[j]->push_back(text[i]);
+        //Parser
+        const char** tokenstemp = (const char**)malloc(sizeof(const char*)*tokens->size());
+        for(unsigned int j=0; j<tokens->size(); j++) {
+            tokenstemp[j] = (*tokens)[j]->c_str();
         }
+        Variable* expr = this->parse(tokenstemp, tokens->size());
+        free(tokenstemp);
+        for(unsigned int j=0; j<tokens->size(); j++) {
+            delete (*tokens)[j];
+        }
+        delete tokens;
+        //Evaluator
+        std::cout<<*(int*)expr->get()->data<<'\n';
+        delete expr;
     }
-    //Parser
-    const char** tokenstemp = (const char**)malloc(sizeof(const char*)*tokens.size());
-    for(unsigned int i=0; i<tokens.size(); i++) {
-        tokenstemp[i] = tokens[i]->c_str();
-    }
-    Variable* expr = parse(tokenstemp, tokens.size());
-    free(tokenstemp);
-    for(unsigned int i=0; i<tokens.size(); i++) {
-        delete tokens[i];
-    }
-    //Evaluator
-    std::cout<<*(int*)expr->get()->data<<'\n';
-    delete expr;
 }

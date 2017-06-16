@@ -22,23 +22,30 @@
 #define LANGUAGE_H
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 class Operator;
 class Variable;
 class Expression;
+class Scope;
 struct type_t {
     const char* id;
     size_t size;
+    bool number;
 };
 class Variable {
     public:
+        Scope* scope;
         type_t type;
         const char* id;
         void* data;
-        Variable(type_t type, const char* id);
+        bool temp;
+        Variable* cache;
         Variable(type_t type, const char* id, void* data);
+        Variable(type_t type, const char* id);
         virtual ~Variable();
         virtual Variable* get();
+        virtual void clearCache();
 };
 class Operator : public Variable {
     public:
@@ -47,7 +54,7 @@ class Operator : public Variable {
         type_t lvalue, rvalue;
         bool uselvalue, uservalue;
         Variable* (*evalf)(Variable* lvalue, Variable* rvalue);
-        Operator(const char* id, int priority, type_t lvalue, type_t rvalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
+        Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
         virtual ~Operator();
         virtual Variable* eval(Variable* lvalue, Variable* rvalue);
 };
@@ -56,21 +63,24 @@ class Expression : public Variable {
         Variable* lvalue;
         Operator* op;
         Variable* rvalue;
-        Variable* cache;
         Expression(Variable* lvalue, Operator* op, Variable* rvalue);
         virtual ~Expression();
         virtual Variable* get();
-        virtual void clearCache();
 };
 class Scope {
     public:
+        std::vector<type_t> types;
+        std::vector<Operator*> ops;
+        std::vector<Variable*> vars;
         Scope();
         virtual ~Scope();
+        virtual void add(Variable* var);
+        virtual Variable* parse(const char** tokens, size_t size);
+        virtual void execute(const char* text);
 };
 
+extern type_t voidtype;
 extern type_t inttype;
-
-Variable* parse(const char** tokens, size_t size);
-void execute(const char* text);
+extern type_t pointertype;
 
 #endif

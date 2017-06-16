@@ -383,10 +383,6 @@ Shape& Shape::operator=(const Shape& rvalue) {
 Renderer::Renderer(const char* title, int w, int h) : Object(NULL) {
     this->family.pushBack("Renderer");
     this->zoom = 1;
-    /*this->size.x = w;
-    this->size.y = h;
-    this->zbuff = (float*)malloc(sizeof(float)*this->size.x*this->size.y);
-    this->screen = (char*)malloc(sizeof(char)*this->size.x*this->size.y);*/
     this->window = SDL_CreateWindow(title,
                                     SDL_WINDOWPOS_CENTERED,
                                     SDL_WINDOWPOS_CENTERED,
@@ -412,17 +408,10 @@ Renderer::Renderer(const char* title, int w, int h) : Object(NULL) {
     this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
 }
 Renderer::~Renderer() {
-    /*free(this->zbuff);
-    free(this->screen);*/
     SDL_DestroyWindow(this->window);
     SDL_FreeSurface(this->buffer);
 }
 void Renderer::begin() {
-    /*this->fbefore = KL_stdterm->flags;
-    KL_stdterm->flags = TERMINAL_DEFAULT_FLAGS-(TERMINAL_N_UPDATE*TERMINAL_DEFAULT_FLAGS & TERMINAL_N_UPDATE);
-    KL_flush(KL_stdterm, TERMINAL_OUTPUT);
-    memset(this->zbuff, 0, sizeof(float)*this->size.x*this->size.y);
-    memset(this->screen, '\0', sizeof(char)*this->size.x*this->size.y);*/
     SDL_FreeSurface(this->buffer);
     int rmask, gmask, bmask, amask;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -441,15 +430,6 @@ void Renderer::begin() {
     SDL_FillRect(this->buffer, NULL, SDL_MapRGB(this->buffer->format, 0, 0, 0));
 }
 void Renderer::end() {
-    /*for(int y=0; y<this->size.y; y++) {
-        for(int x=0; x<this->size.x; x++) {
-            KL_cwrite(KL_stdterm, *(this->screen+x+y*this->size.x));
-        }
-        KL_cwrite(KL_stdterm, '\n');
-    }
-	KL_swritef(KL_stdterm, "%d TPS\n%d FPS\n", this->ticks, this->frames);
-    KL_stdterm->flags = this->fbefore;
-    KL_updateTerminal(KL_stdterm);*/
     SDL_Surface* screen = SDL_GetWindowSurface(this->window);
     ::drawImage(this->buffer, 0, 0, screen);
     SDL_UpdateWindowSurface(this->window);
@@ -458,14 +438,6 @@ bool Renderer::getEvent(SDL_Event* event) {
     return SDL_PollEvent(event);
 }
 void Renderer::draw(char c, V3f pos) {
-    /*V2f p = {this->size.x/2+(pos.x-this->pos.x), this->size.y/2-(pos.y-this->pos.y)};
-    if(squareInSquare({0, 0, (float)this->size.x-1, (float)this->size.y-1}
-               ,{p.x, p.y, p.x, p.y})) {
-        if(pos.z >= *(this->zbuff+(int)p.x+(int)p.y*this->size.x)) {
-            *(this->zbuff+(int)p.x+(int)p.y*this->size.x) = pos.z;
-            *(this->screen+(int)p.x+(int)p.y*this->size.x) = c;
-        }
-    }*/
 }
 V2i Renderer::mapPos(V2f pos) {
     return {this->buffer->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->buffer->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
@@ -522,11 +494,6 @@ int Renderer::drawImage(V2f pos, SDL_Surface* image) {
 }
 Renderer& Renderer::operator=(const Renderer& rvalue) {
     Object::operator=(rvalue);
-    /*this->size = rvalue.size;
-    this->zbuff = (float*)realloc(this->zbuff, sizeof(float)*this->size.x*this->size.y);
-    this->screen = (char*)realloc(this->screen, sizeof(char)*this->size.x*this->size.y);
-    memcpy(this->zbuff, rvalue.zbuff, sizeof(float)*this->size.x*this->size.y);
-    memcpy(this->screen, rvalue.screen, sizeof(char)*this->size.x*this->size.y);*/
     return *this;
 }
 

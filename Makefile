@@ -30,8 +30,11 @@ LDLIBS=-L./karolslib/build -lkarolslib -lSDL2 -lSDL2_image -lSDL2_ttf
 
 all: clean textcraft
 
-textcraft: graphics.o gui.o language.o main.o renderers.o shapes.o world.o
-	$(LD) $(LDFLAGS) $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o $(LDLIBS) -o $(BD)/textcraft
+textcraft: brainfuck.o graphics.o gui.o language.o main.o network.o renderers.o shapes.o world.o
+	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/network.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o $(LDLIBS) -o $(BD)/textcraft
+
+brainfuck.o:
+	$(CC) $(CCFLAGS) $(SD)/brainfuck.cpp -c -o $(BD)/brainfuck.o
 
 graphics.o:
 	$(CC) $(CCFLAGS) $(SD)/graphics.cpp -c -o $(BD)/graphics.o
@@ -45,6 +48,9 @@ language.o:
 main.o:
 	$(CC) $(CCFLAGS) $(SD)/main.cpp -c -o $(BD)/main.o
 
+network.o:
+	$(CC) $(CCFLAGS) $(SD)/network.cpp -c -o $(BD)/network.o
+
 renderers.o:
 	$(CC) $(CCFLAGS) $(SD)/renderers.cpp -c -o $(BD)/renderers.o
 
@@ -55,4 +61,4 @@ world.o:
 	$(CC) $(CCFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/textcraft $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o
+	rm -f $(BD)/textcraft $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/network.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o

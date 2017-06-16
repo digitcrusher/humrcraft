@@ -204,10 +204,6 @@ class Shape : public Object { //TODO: texture configuration
 };
 class Renderer : public Object {
     public:
-        /*int fbefore;
-        V2i size;
-        float* zbuff;
-        char* screen;*/
         int zoom; //Pixels per Meter
         SDL_Window* window;
         SDL_Surface* buffer;
