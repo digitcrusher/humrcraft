@@ -22,9 +22,122 @@
 #include "shapes.h"
 #include "graphics.h"
 #include <utils/utils.h>
+#include <window/terminal.h>
 #include <iostream>
 
-Raycaster::Raycaster(const char* title, int w, int h) : Renderer(title, w, h) {
+SDLRenderer::SDLRenderer(const char* title, int w, int h) : Renderer() {
+    this->family.pushBack("SDLRenderer");
+    this->window = SDL_CreateWindow(title,
+                                    SDL_WINDOWPOS_CENTERED,
+                                    SDL_WINDOWPOS_CENTERED,
+                                    w,
+                                    h,
+                                    SDL_WINDOW_SHOWN |
+                                    SDL_WINDOW_RESIZABLE |
+                                    SDL_WINDOW_MOUSE_FOCUS |
+                                    SDL_WINDOW_INPUT_FOCUS);
+    int rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    rmask = 0xff000000;
+    gmask = 0x00ff0000;
+    bmask = 0x0000ff00;
+    amask = 0x000000ff;
+#else
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+#endif
+    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
+    this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
+}
+SDLRenderer::~SDLRenderer() {
+    SDL_DestroyWindow(this->window);
+    SDL_FreeSurface(this->buffer);
+}
+void SDLRenderer::begin() {
+    Renderer::begin();
+    SDL_FreeSurface(this->buffer);
+    int rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    rmask = 0xff000000;
+    gmask = 0x00ff0000;
+    bmask = 0x0000ff00;
+    amask = 0x000000ff;
+#else
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+#endif
+    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
+    this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
+    SDL_FillRect(this->buffer, NULL, SDL_MapRGB(this->buffer->format, 0, 0, 0));
+}
+void SDLRenderer::end() {
+    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
+    ::drawImage(this->buffer, 0, 0, screen);
+    SDL_UpdateWindowSurface(this->window);
+    Renderer::end();
+}
+bool SDLRenderer::getEvent(SDL_Event* event) {
+    return SDL_PollEvent(event);
+}
+V2i SDLRenderer::mapPos(V2f pos) {
+    return {this->buffer->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->buffer->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
+}
+V2f SDLRenderer::getPos(V2i pos) {
+    return {(float)(pos.x-this->buffer->w/2)/this->zoom+Object::getPos().x, (float)(this->buffer->h/2-pos.y)/this->zoom+Object::getPos().y};
+}
+int SDLRenderer::mapRGB(uint8_t r, uint8_t g, uint8_t b) {
+    return SDL_MapRGB(this->buffer->format, r, g, b);
+}
+void SDLRenderer::getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b) {
+    SDL_GetRGB(color, this->buffer->format, r, g, b);
+}
+int SDLRenderer::mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+    return SDL_MapRGBA(this->buffer->format, r, g, b, a);
+}
+void SDLRenderer::getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a) {
+    SDL_GetRGBA(color, this->buffer->format, r, g, b, a);
+}
+int SDLRenderer::getPixel(V2f pos) {
+    V2i p = this->mapPos(pos);
+    return ::getPixel(this->buffer, p.x, p.y); // use no scope (global scope)
+}
+void SDLRenderer::drawPixel(V2f pos, int color) {
+    V2i p = this->mapPos(pos);
+    ::drawPixel(this->buffer, p.x, p.y, color);
+}
+void SDLRenderer::drawCircle(V2f pos, int r, int color) {
+    V2i p = this->mapPos(pos);
+    ::drawCircle(this->buffer, p.x, p.y, r*this->zoom, color);
+}
+void SDLRenderer::drawSquare(V2f pos, V2f ori, int sidelen, int color) {
+    V2i p = this->mapPos(pos);
+    ::drawSquare(this->buffer, p.x, p.y, ori.y, sidelen*this->zoom, color);
+}
+void SDLRenderer::drawEllipse(V2f pos1, V2f pos2, int color) {
+    V2i p1 = this->mapPos(pos1);
+    V2i p2 = this->mapPos(pos2);
+    ::drawEllipse(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
+}
+void SDLRenderer::drawLine(V2f pos1, V2f pos2, int color) {
+    V2i p1 = this->mapPos(pos1);
+    V2i p2 = this->mapPos(pos2);
+    ::drawLine(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
+}
+void SDLRenderer::drawRectangle(V2f pos1, V2f pos2, int color) {
+    V2i p1 = this->mapPos(pos1);
+    V2i p2 = this->mapPos(pos2);
+    ::drawRectangle(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
+}
+int SDLRenderer::drawImage(V2f pos, SDL_Surface* image) {
+    V2i p = this->mapPos(pos);
+    return ::drawImage(image, p.x, p.y, this->buffer);
+}
+
+Raycaster::Raycaster(const char* title, int w, int h) : SDLRenderer(title, w, h) {
     this->family.pushBack("Raycaster");
     this->fov = M_PI/2;
     this->fos = 25;
@@ -32,11 +145,11 @@ Raycaster::Raycaster(const char* title, int w, int h) : Renderer(title, w, h) {
 Raycaster::~Raycaster() {
 }
 void Raycaster::begin() {
-    Renderer::begin();
+    SDLRenderer::begin();
 }
 void Raycaster::end() {
     this->raycast(0, this->buffer->w);
-    Renderer::end();
+    SDLRenderer::end();
 }
 void Raycaster::raycast(int sx, int ex) {
     //int fogr=0, fogg=0, fogb=0;
@@ -119,4 +232,57 @@ void Raycaster::drawRectangle(V2f pos1, V2f pos2, int color) {
 }
 int Raycaster::drawImage(V2f pos, SDL_Surface* image) {
     return 0;
+}
+
+ClassicRenderer::ClassicRenderer(int w, int h) : Renderer() {
+    this->family.pushBack("ClassicRenderer");
+    this->size.x = w;
+    this->size.y = h;
+    this->zbuff = (float*)malloc(sizeof(float)*this->size.x*this->size.y);
+    this->screen = (char*)malloc(sizeof(char)*this->size.x*this->size.y);
+    this->ticks = 0;
+    this->frames = 0;
+}
+ClassicRenderer::~ClassicRenderer() {
+    free(this->zbuff);
+    free(this->screen);
+}
+void ClassicRenderer::begin() {
+    Renderer::begin();
+    this->fbefore = KL_stdterm->flags;
+    KL_stdterm->flags = TERMINAL_DEFAULT_FLAGS-(TERMINAL_N_UPDATE*TERMINAL_DEFAULT_FLAGS & TERMINAL_N_UPDATE);
+    KL_flush(KL_stdterm, TERMINAL_OUTPUT);
+    memset(this->zbuff, 0, sizeof(float)*this->size.x*this->size.y);
+    memset(this->screen, '\0', sizeof(char)*this->size.x*this->size.y);
+}
+void ClassicRenderer::end() {
+    for(int y=0; y<this->size.y; y++) {
+        for(int x=0; x<this->size.x; x++) {
+            KL_cwrite(KL_stdterm, *(this->screen+x+y*this->size.x));
+        }
+        KL_cwrite(KL_stdterm, '\n');
+    }
+	KL_swritef(KL_stdterm, "%d TPS\n%d FPS\n", this->ticks, this->frames);
+    KL_stdterm->flags = this->fbefore;
+    KL_updateTerminal(KL_stdterm);
+    Renderer::end();
+}
+void ClassicRenderer::draw(char c, V3f pos) {
+    V2f p = {this->size.x/2+(pos.x-this->pos.x), this->size.y/2-(pos.y-this->pos.y)};
+    if(squareInSquare({0, 0, (float)this->size.x-1, (float)this->size.y-1}
+               ,{p.x, p.y, p.x, p.y})) {
+        if(pos.z >= *(this->zbuff+(int)p.x+(int)p.y*this->size.x)) {
+            *(this->zbuff+(int)p.x+(int)p.y*this->size.x) = pos.z;
+            *(this->screen+(int)p.x+(int)p.y*this->size.x) = c;
+        }
+    }
+}
+ClassicRenderer ClassicRenderer::operator=(const ClassicRenderer& rvalue) {
+    Renderer::operator=(rvalue);
+    this->size = rvalue.size;
+    this->zbuff = (float*)realloc(this->zbuff, sizeof(float)*this->size.x*this->size.y);
+    this->screen = (char*)realloc(this->screen, sizeof(char)*this->size.x*this->size.y);
+    memcpy(this->zbuff, rvalue.zbuff, sizeof(float)*this->size.x*this->size.y);
+    memcpy(this->screen, rvalue.screen, sizeof(char)*this->size.x*this->size.y);
+    return *this;
 }

@@ -31,17 +31,62 @@
 #include "graphics.h"
 #include "gui.h"
 #include "language.h"
-#define RENDERER 1
+#define RENDERER 1 //0 - SDLRenderer, 1 - Raycaster, 2 - ClassicRenderer
 
-#if RENDERER == 1
-Raycaster* renderer;
-#else
-Renderer* renderer;
-#endif
 /*GUIProgressBar* progressbar;
 GUIFrame* frame;*/
-Object* hero;
 World* game = new World();
+Object* hero;
+#if RENDERER == 2
+#include <karolslib.h>
+#include <window/terminal.h>
+ClassicRenderer* renderer;
+void generate() {
+    choose:
+    int seed;
+    KL_swrite(KL_stdterm, "Enter seed ");
+    if(stoi(KL_sread(KL_stdterm), &seed)) {
+        goto choose;
+    }
+    game->generate(seed, {-100, -100}, {100, 100});
+}
+void help() {
+    KL_swrite(KL_stdterm, "textcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n");
+    KL_swrite(KL_stdterm, "This program comes with ABSOLUTELY NO WARRANTY.\n");
+    KL_swrite(KL_stdterm, "This is free software, and you are welcome to redistribute it\n");
+    KL_swrite(KL_stdterm, "under certain conditions.\n");
+    KL_swrite(KL_stdterm, "Controls\n");
+    KL_swrite(KL_stdterm, "Q - Drop a thing\n");
+    KL_swrite(KL_stdterm, "E - Pick up a thing\n");
+    KL_swrite(KL_stdterm, "W - Move forward\n");
+    KL_swrite(KL_stdterm, "A - Move left\n");
+    KL_swrite(KL_stdterm, "S - Move down\n");
+    KL_swrite(KL_stdterm, "D - Move right\n");
+    KL_swrite(KL_stdterm, "Z - Generate a world\n");
+    KL_swrite(KL_stdterm, "X - Get some help\n");
+    KL_swrite(KL_stdterm, "C - Settings\n");
+    KL_swrite(KL_stdterm, "Press any key to continue...\n");
+    KL_cread(KL_stdterm);
+    KL_swrite(KL_stdterm, "Characters\n");
+    KL_swrite(KL_stdterm, "@ - Hero\n");
+    KL_swrite(KL_stdterm, "Y - Tree\n");
+    KL_swrite(KL_stdterm, "n - Rock\n");
+    KL_swrite(KL_stdterm, "* - Flower\n");
+    KL_swrite(KL_stdterm, "m - Wolf\n");
+    KL_swrite(KL_stdterm, "# - Lava\n");
+    KL_swrite(KL_stdterm, "~ - Water\n");
+    KL_swrite(KL_stdterm, "# - Milk\n");
+    KL_swrite(KL_stdterm, "\" - Grass\n");
+    KL_swrite(KL_stdterm, "M - Cow\n");
+    KL_swrite(KL_stdterm, "o - Hamster\n");
+    KL_swrite(KL_stdterm, "Press any key to continue...\n");
+    KL_cread(KL_stdterm);
+}
+#elif RENDERER == 1
+Raycaster* renderer;
+#else
+SDLRenderer* renderer;
+#endif
 float gmulti = 1;
 bool pause = 1;
 bool running = 1;
@@ -95,7 +140,16 @@ int main(int argc, char** argv) {
         stop(1);
     }
     Scope scope;
-    scope.execute("int a=5; int b=10; int c=a+((10-5)*(1+1))/b; int* 6;");
+    std::ifstream file("cfg.cipl");
+    file.seekg(0, file.end);
+    int size = file.tellg();
+    file.seekg(0, file.beg);
+    char* buff = (char*)malloc(sizeof(char)*(size+1));
+    file.readsome(buff, size);
+    buff[size] = '\0';
+    scope.execute(buff);
+    free(buff);
+    file.close();
     /*game->registerThing(new Thing(8, 1.5, 0, {1, (float)1/64}, NULL, Thing::defaultRenderf)); //Tree
     game->registerThing(new Thing(4, 1, 0, {1, (float)1/512}, NULL, Thing::defaultRenderf)); //Log
     game->registerThing(new Thing(1, 0.5, 0, {1, (float)1/256}, NULL, Thing::defaultRenderf)); //Stick
@@ -150,7 +204,13 @@ int main(int argc, char** argv) {
     widget->add((new GUILabel(font, "GUIButton"))->setBounds(0, 0, 100, 50));
     frame->add(progressbar);
     frame->add(widget);*/
-#if RENDERER == 1
+#if RENDERER == 2
+    if(KL_init()) {
+        std::cout<<"KL_init error"<<'\n';
+        stop(1);
+    }
+    renderer = new ClassicRenderer(20, 20);
+#elif RENDERER == 1
     renderer = new Raycaster("textcraft 1.0", 800/2, 600/2);
     std::ifstream cfg("cfg.dat"); //TODO: make a better parser
     int lines=0;
@@ -176,17 +236,21 @@ int main(int argc, char** argv) {
     }
     cfg.close();
 #else
-    renderer = new Renderer("textcraft 1.0", 800, 600);
+    renderer = new SDLRenderer("textcraft 1.0", 800, 600);
 #endif
     game->add(renderer);
     hero = renderer;
     hero->ori = {0, M_PI/2};
+#if RENDERER == 2
+    game->generate(0, {-50, -50}, {50, 50});
+#else
     srand(rand()*time(0));
     for(int i=0; i<50; i++) {
-#if RENDERER == 1
-        int tex = rand()%textures.size();
-        Object* obj = new Object(new Circle(rand()%4+1, 1, rand()%9+1, &textures[tex]));
-#endif
+        Object* obj = new Object(new Circle(rand()%4+1, 1, rand()%9+1));
+    #if RENDERER == 1
+        obj->shape->texture = &textures[rand()%textures.size()];
+        obj->shape->texmode = 1;
+    #endif
         int color = rand()%128;
         obj->shape->r = 255-color;
         obj->shape->g = 127;
@@ -197,6 +261,7 @@ int main(int argc, char** argv) {
         obj->vel = {1, (float)(rand()%314/100)};
         game->add(obj);
     }
+#endif
     long lastTime = KL_getMS();
     long lastUpdate = KL_getMS();
     double ticksPerS = 60;
@@ -211,6 +276,7 @@ int main(int argc, char** argv) {
         lastTime = now;
         bool shouldRender = 0;
         while(delta >= 1) {
+#if RENDERER != 2
             SDL_Event event;
             while(renderer->getEvent(&event)) {
                 switch(event.type) {
@@ -283,20 +349,21 @@ int main(int argc, char** argv) {
                                 }break;
                         }
                         break;
-#if RENDERER == 1
+    #if RENDERER == 1
                     case SDL_MOUSEMOTION:
                         if(!pause) {
                             hero->ori.y -= renderer->fov/renderer->buffer->w*event.motion.xrel;
                             SDL_WarpMouseInWindow(renderer->window, renderer->buffer->w/2, renderer->buffer->h/2);
                         }
                         break;
-#endif
+    #endif
                     case SDL_QUIT:
                         running = 0;
                         break;
                 }
                 //frame->processEvent(event);
             }
+#endif
             now = KL_getMS();
             if(!pause) update((double)(now-lastUpdate)/1000);
             lastUpdate = now;
@@ -310,6 +377,10 @@ int main(int argc, char** argv) {
         }
         if(KL_getMS()-lastTimer >= 1000) {
             lastTimer += 1000;
+#if RENDERER == 2
+            ((ClassicRenderer*)renderer)->ticks = ticks;
+            ((ClassicRenderer*)renderer)->frames = frames;
+#endif
             std::cout<<frames<<' '<<ticks<<'\n';
             frames = 0; //Reset FPS counter
             ticks = 0; //Reset TPS counter

@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "shapes.h"
+#include "renderers.h"
 
 float triangle(float i) {
     return fabs(1-fmod(fabs(i-M_PI/2)/M_PI, 2))*2-1;
@@ -51,10 +52,11 @@ Circle::~Circle() {
 }
 void Circle::render(Renderer* renderer) {
     Shape::render(renderer);
-    renderer->drawCircle(this->getPos(), this->radius, renderer->mapRGBA(this->r, this->g, this->b, this->a));
-    renderer->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri())
+    if(!(2 < renderer->family.size() && !strcmp(renderer->family[2], "SDLRenderer"))) return;
+    ((SDLRenderer*)renderer)->drawCircle(this->getPos(), this->radius, ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri())
                     ,this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(this->getOri())}
-                    ,renderer->mapRGBA(this->r, this->g, this->b, this->a));
+                    ,((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
 }
 float Circle::getRadius(V2f angle) {
     return this->radius;
@@ -83,10 +85,11 @@ Square::~Square() {
 }
 void Square::render(Renderer* renderer) {
     Shape::render(renderer);
-    renderer->drawSquare(this->getPos(), this->getOri(), this->sidelen, renderer->mapRGBA(this->r, this->g, this->b, this->a));
-    renderer->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y})
+    if(!(2 < renderer->family.size() && !strcmp(renderer->family[2], "SDLRenderer"))) return;
+    ((SDLRenderer*)renderer)->drawSquare(this->getPos(), this->getOri(), this->sidelen, ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y})
                     ,this->getPos().y+(float)sin(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y})}
-                    ,renderer->mapRGBA(this->r, this->g, this->b, this->a));
+                    ,((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
 }
 float Square::getRadius(V2f angle) {
     return squarer(-(this->getOri().y+angle.y), this->sidelen);

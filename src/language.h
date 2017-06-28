@@ -30,8 +30,10 @@ class Expression;
 class Scope;
 struct type_t {
     const char* id;
+    char* opts;
     size_t size;
     bool number;
+    bool any;
 };
 class Variable {
     public:
@@ -39,7 +41,6 @@ class Variable {
         type_t type;
         const char* id;
         void* data;
-        bool temp;
         Variable* cache;
         Variable(type_t type, const char* id, void* data);
         Variable(type_t type, const char* id);
@@ -49,12 +50,12 @@ class Variable {
 };
 class Operator : public Variable {
     public:
-        bool postfix;
         int priority;
         type_t lvalue, rvalue;
         bool uselvalue, uservalue;
+        bool suffix;
         Variable* (*evalf)(Variable* lvalue, Variable* rvalue);
-        Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
+        Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, bool suffix, Variable* (*evalf)(Variable* lvalue, Variable* rvalue));
         virtual ~Operator();
         virtual Variable* eval(Variable* lvalue, Variable* rvalue);
 };
@@ -74,13 +75,15 @@ class Scope {
         std::vector<Variable*> vars;
         Scope();
         virtual ~Scope();
-        virtual void add(Variable* var);
+        virtual void addType(type_t type);
+        virtual void addOp(Operator* op);
+        virtual void addVar(Variable* var);
         virtual Variable* parse(const char** tokens, size_t size);
         virtual void execute(const char* text);
 };
 
+extern type_t anytype;
 extern type_t voidtype;
 extern type_t inttype;
-extern type_t pointertype;
 
 #endif

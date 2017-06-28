@@ -1,0 +1,19 @@
+/*
+ * CIPL features:
+ * -Comments (single and multi-line)
+ * -Variables (any integer, pointers)
+ * -Basic arithmetic (numbers, operators)
+ */
+
+//Example demo of these features
+
+//This is a comment
+
+/*
+ * This is a multi-line comment
+ */
+
+(int a = 4)++;
+int c = a+((10-5)*(1+1))/(int b = 10); //In CIPL you can define new variables anywhere you want!
+int* ptr = &c;
+1 * * &ptr;

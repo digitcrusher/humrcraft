@@ -205,28 +205,10 @@ class Shape : public Object { //TODO: texture configuration
 class Renderer : public Object {
     public:
         int zoom; //Pixels per Meter
-        SDL_Window* window;
-        SDL_Surface* buffer;
-        Renderer(const char* title, int w, int h);
+        Renderer();
         virtual ~Renderer();
         virtual void begin();
         virtual void end();
-        virtual bool getEvent(SDL_Event* event);
-        virtual void draw(char c, V3f pos); //TODO: remove any calls to this function
-        virtual V2i mapPos(V2f pos);
-        virtual V2f getPos(V2i pos);
-        virtual int mapRGB(uint8_t r, uint8_t g, uint8_t b);
-        virtual void getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b);
-        virtual int mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-        virtual void getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a);
-        virtual int getPixel(V2f pos);
-        virtual void drawPixel(V2f pos, int color);
-        virtual void drawCircle(V2f pos, int r, int color);
-        virtual void drawSquare(V2f pos, V2f rot, int sidelen, int color);
-        virtual void drawEllipse(V2f pos1, V2f pos2, int color);
-        virtual void drawLine(V2f pos1, V2f pos2, int color);
-        virtual void drawRectangle(V2f pos1, V2f pos2, int color);
-        virtual int drawImage(V2f pos, SDL_Surface* image);
         virtual Renderer& operator=(const Renderer& rvalue);
 };
 class Thing : public Object {

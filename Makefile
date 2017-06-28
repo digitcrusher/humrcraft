@@ -23,7 +23,7 @@ CCFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c
 LD=$(CC)
 #For linux:
 LDFLAGS=
-LDLIBS=-L./karolslib/build -lkarolslib -lSDL2 -lSDL2_image -lSDL2_ttf
+LDLIBS=-L./karolslib/build -lkarolslib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf
 #For windows:
 #LDFLAGS=-pthread -mwindows -lgdi32
 #LDLIBS=-L./karolslib/build -lkarolslib

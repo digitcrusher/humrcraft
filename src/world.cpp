@@ -23,6 +23,7 @@
 #include "world.h"
 #include "graphics.h"
 #include "shapes.h"
+#include "renderers.h"
 
 bool checkCollision(manifold* manifold, Object* a, Object* b) {
     if(a->shape && b->shape) {
@@ -380,117 +381,15 @@ Shape& Shape::operator=(const Shape& rvalue) {
     return *this;
 }
 
-Renderer::Renderer(const char* title, int w, int h) : Object(NULL) {
+Renderer::Renderer() : Object(NULL) {
     this->family.pushBack("Renderer");
     this->zoom = 1;
-    this->window = SDL_CreateWindow(title,
-                                    SDL_WINDOWPOS_CENTERED,
-                                    SDL_WINDOWPOS_CENTERED,
-                                    w,
-                                    h,
-                                    SDL_WINDOW_SHOWN |
-                                    SDL_WINDOW_RESIZABLE |
-                                    SDL_WINDOW_MOUSE_FOCUS |
-                                    SDL_WINDOW_INPUT_FOCUS);
-    int rmask, gmask, bmask, amask;
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    rmask = 0xff000000;
-    gmask = 0x00ff0000;
-    bmask = 0x0000ff00;
-    amask = 0x000000ff;
-#else
-    rmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    bmask = 0x00ff0000;
-    amask = 0xff000000;
-#endif
-    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
-    this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
 }
 Renderer::~Renderer() {
-    SDL_DestroyWindow(this->window);
-    SDL_FreeSurface(this->buffer);
 }
 void Renderer::begin() {
-    SDL_FreeSurface(this->buffer);
-    int rmask, gmask, bmask, amask;
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    rmask = 0xff000000;
-    gmask = 0x00ff0000;
-    bmask = 0x0000ff00;
-    amask = 0x000000ff;
-#else
-    rmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    bmask = 0x00ff0000;
-    amask = 0xff000000;
-#endif
-    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
-    this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
-    SDL_FillRect(this->buffer, NULL, SDL_MapRGB(this->buffer->format, 0, 0, 0));
 }
 void Renderer::end() {
-    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
-    ::drawImage(this->buffer, 0, 0, screen);
-    SDL_UpdateWindowSurface(this->window);
-}
-bool Renderer::getEvent(SDL_Event* event) {
-    return SDL_PollEvent(event);
-}
-void Renderer::draw(char c, V3f pos) {
-}
-V2i Renderer::mapPos(V2f pos) {
-    return {this->buffer->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->buffer->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
-}
-V2f Renderer::getPos(V2i pos) {
-    return {(float)(pos.x-this->buffer->w/2)/this->zoom+Object::getPos().x, (float)(this->buffer->h/2-pos.y)/this->zoom+Object::getPos().y};
-}
-int Renderer::mapRGB(uint8_t r, uint8_t g, uint8_t b) {
-    return SDL_MapRGB(this->buffer->format, r, g, b);
-}
-void Renderer::getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b) {
-    SDL_GetRGB(color, this->buffer->format, r, g, b);
-}
-int Renderer::mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    return SDL_MapRGBA(this->buffer->format, r, g, b, a);
-}
-void Renderer::getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a) {
-    SDL_GetRGBA(color, this->buffer->format, r, g, b, a);
-}
-int Renderer::getPixel(V2f pos) {
-    V2i p = this->mapPos(pos);
-    return ::getPixel(this->buffer, p.x, p.y); // use no scope (global scope)
-}
-void Renderer::drawPixel(V2f pos, int color) {
-    V2i p = this->mapPos(pos);
-    ::drawPixel(this->buffer, p.x, p.y, color);
-}
-void Renderer::drawCircle(V2f pos, int r, int color) {
-    V2i p = this->mapPos(pos);
-    ::drawCircle(this->buffer, p.x, p.y, r*this->zoom, color);
-}
-void Renderer::drawSquare(V2f pos, V2f ori, int sidelen, int color) {
-    V2i p = this->mapPos(pos);
-    ::drawSquare(this->buffer, p.x, p.y, ori.y, sidelen*this->zoom, color);
-}
-void Renderer::drawEllipse(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
-    ::drawEllipse(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
-}
-void Renderer::drawLine(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
-    ::drawLine(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
-}
-void Renderer::drawRectangle(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
-    ::drawRectangle(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
-}
-int Renderer::drawImage(V2f pos, SDL_Surface* image) {
-    V2i p = this->mapPos(pos);
-    return ::drawImage(image, p.x, p.y, this->buffer);
 }
 Renderer& Renderer::operator=(const Renderer& rvalue) {
     Object::operator=(rvalue);
@@ -584,60 +483,61 @@ Thing& Thing::operator=(const Thing& rvalue) {
     return *this;
 }
 void Thing::defaultRenderf(Thing* thing, Renderer* renderer) {
+    if(!(2 < renderer->family.size() && !strcmp(renderer->family[2], "ClassicRenderer"))) return;
     switch(thing->type) {
         case Tree:
-            renderer->draw('Y', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('Y', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Log:
-            renderer->draw('=', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('=', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Stick:
-            renderer->draw('/', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('/', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Flower:
-            renderer->draw('*', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('*', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Grass:
-            renderer->draw('"', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('"', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Wheat:
-            renderer->draw('w', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('w', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Seeds:
-            renderer->draw('.', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('.', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Flint:
-            renderer->draw('^', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('^', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Stone:
-            renderer->draw('n', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('n', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Water:
-            renderer->draw('~', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('~', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Human:
-            renderer->draw('@', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('@', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Pig: //TODO
-            renderer->draw('m', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('m', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Cow: //TODO
-            renderer->draw('M', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('M', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Hamster: //TODO
-            renderer->draw('o', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('o', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case Bread:
-            renderer->draw('B', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('B', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case RawMeat:
-            renderer->draw('O', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('O', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         case CookedMeat:
-            renderer->draw('0', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('0', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
         default:
-            renderer->draw('#', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
+            ((ClassicRenderer*)renderer)->draw('#', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
             break;
     }
 }
