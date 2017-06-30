@@ -22,87 +22,13 @@
 #include <utils/utils.h>
 #include "language.h"
 
-type_t anytype = {"", "", 0, 0, 1};
-type_t voidtype = {"void", "", sizeof(void), 0, 0};
-type_t inttype = {"int", "", sizeof(int), 1, 0};
-
-Variable::Variable(type_t type, const char* id, void* data) {
-    this->scope = NULL;
-    this->type = type;
-    this->id = id;
-    this->data = data;
-    this->cache = NULL;
-}
-Variable::Variable(type_t type, const char* id) : Variable(type, id, malloc(type.size)) {
-}
-Variable::~Variable() {
-    free(this->data);
-}
-Variable* Variable::get() {
-    if(!this->cache) {
-        this->cache = this;
-    }
-    return this->cache;
-}
-void Variable::clearCache() {
-    this->cache = NULL;
-}
-
-Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, bool suffix
-                  ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable(voidtype, id) {
-    this->suffix = suffix;
-    this->priority = priority;
-    this->lvalue = lvalue;
-    this->rvalue = rvalue;
-    this->uselvalue = uselvalue;
-    this->uservalue = uservalue;
-    this->evalf = evalf;
-}
-Operator::~Operator() {
-}
-Variable* Operator::eval(Variable* lvalue, Variable* rvalue) {
-    if(this->evalf) {
-        return this->evalf(lvalue, rvalue);
-    }
-    return NULL;
-}
-
-Expression::Expression(Variable* lvalue, Operator* op, Variable* rvalue) : Variable(voidtype, "") {
-    this->lvalue = lvalue;
-    this->op = op;
-    this->rvalue = rvalue;
-}
-Expression::~Expression() {
-    if(this->op && this->op->suffix) {
-        this->cache = this->op->eval(this->lvalue, this->rvalue);
-    }
-    if(this->lvalue && !this->lvalue->scope && this->lvalue != this->rvalue && this->lvalue != this->cache) {
-        delete this->lvalue;
-    }
-    if(this->rvalue && !this->rvalue->scope && this->rvalue != this->lvalue && this->rvalue != this->cache) {
-        delete this->rvalue;
-    }
-    if(this->cache && !this->cache->scope && this->cache != this->lvalue && this->cache != this->rvalue) {
-        delete this->cache;
-    }
-}
-Variable* Expression::get() {
-    if(this->op && !this->cache) {
-        if(!this->op->suffix) {
-            this->cache = this->op->eval(this->lvalue, this->rvalue);
-        }else {
-            if(this->op->uselvalue) {
-                this->cache = this->lvalue->get();
-            }else {
-                this->cache = this->rvalue->get();
-            }
-        }
-    }
-    return this->cache->get();
-}
+type_t returntype = {"", "", sizeof(Variable*), 3};
+type_t anytype = {"", "", 0, 2};
+type_t voidtype = {"void", "", sizeof(void), 0};
+type_t inttype = {"int", "", sizeof(int), 1};
 
 bool typecmp(type_t type, type_t type2) {
-    return (!strcmp(type.id, type2.id) && !strcmp(type.opts, type2.opts) && type.size == type2.size) || (type.number && type2.number) || type.any || type2.any;
+    return (!strcmp(type.id, type2.id) && !strcmp(type.opts, type2.opts) && type.size == type2.size) || (type.type == 1 && type2.type == 1) || type.type == 2 || type2.type == 2;
 }
 bool varcmp(Variable* var, type_t type) {
     return typecmp(var->type, type);
@@ -139,7 +65,9 @@ int checkGroup(char c) {
     }
     return -1;
 }
+
 Scope::Scope() {
+    this->scope = NULL;
     this->addType(anytype);
     this->addType(voidtype);
     this->addType(inttype);
@@ -421,7 +349,7 @@ Scope::Scope() {
             opts[strlen(type.opts)+1] = '\0';
             free(type.opts);
             type.opts = opts;
-            type.number = 1;
+            type.type = 1;
             Variable* var = new Variable(type, "");
             *(void**)var->data = rvalue->get()->data;
             return var;
@@ -437,7 +365,7 @@ Scope::Scope() {
             opts[strlen(type.opts)+1] = '\0';
             free(type.opts);
             type.opts = opts;
-            type.number = 1;
+            type.type = 1;
             Variable* var = new Variable(type, "");
             *(void**)var->data = rvalue->get()->data;
             return var;
@@ -492,6 +420,18 @@ void Scope::addVar(Variable* var) {
     this->vars.push_back(var);
     var->scope = this;
 }
+Variable* Scope::getVar(const char* id) {
+    for(unsigned int i=0; i<this->vars.size(); i++) {
+        if(!strcmp(this->vars[i]->id, id)) {
+            return this->vars[i];
+            break;
+        }
+    }
+    if(this->scope) {
+        return this->scope->getVar(id);
+    }
+    return NULL;
+}
 Variable* Scope::parse(const char** tokens, size_t size) {
     Variable* lvalue = NULL;
     Operator* op = NULL;
@@ -512,10 +452,13 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                     }
                     break;
                 case 3:
-                    if(!strcmp(tokens[i], "if")) {
-                        if(i+1 < size) {
+                    if(!strcmp(tokens[i], "return")) {
+                        int start = ++i;
+                        while(i < size) {
                             i++;
                         }
+                        Variable* value = this->parse(tokens+start, i-start);
+                        lvalue = new Return(value);
                     }else {
                         type_t* type = NULL;
                         for(unsigned int j=0; j<this->types.size(); j++) {
@@ -549,14 +492,9 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                             lvalue = this->vars[this->vars.size()-1];
                             lvalue->type.opts = (char*)malloc(sizeof(char)*(str.size()+1));
                             strcpy(lvalue->type.opts, str.c_str());
-                            lvalue->type.number |= lvalue->type.opts[strlen(lvalue->type.opts)-1] == '*';
+                            if(lvalue->type.opts[strlen(lvalue->type.opts)-1] == '*') lvalue->type.type = 1;
                         }else {
-                            for(unsigned int j=0; j<this->vars.size(); j++) {
-                                if(!strcmp(this->vars[j]->id, tokens[i])) {
-                                    lvalue = this->vars[j];
-                                    break;
-                                }
-                            }
+                            lvalue = this->getVar(tokens[i]);
                             if(!lvalue) {
                                 std::cout<<"unidentified variable "<<tokens[i]<<'\n';
                                 return NULL;
@@ -564,7 +502,7 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                         }
                     }
                     break;
-                case 5:
+                case 5: {
                     int start = ++i;
                     int paranthesis = 1;
                     while(i < size) {
@@ -585,6 +523,34 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                         return NULL;
                     }
                     lvalue = this->parse(tokens+start, i-start);
+                    }break;
+                case 7:
+                    std::string string;
+                    i++;
+                    int brackets = 1;
+                    while(i < size) {
+                        if(strlen(tokens[i]) == 1) {
+                            group = checkGroup(tokens[i][0]);
+                            if(group == 7) {
+                                brackets++;
+                            }
+                            if(group == 8) {
+                                brackets--;
+                            }
+                            if(brackets < 1) {
+                                break;
+                            }
+                        }
+                        string.append(tokens[i]);
+                        i++;
+                    }
+                    if(i == size) {
+                        std::cout<<"expected "<<brackets<<" closing curly brackets before end of statement\n";
+                        return NULL;
+                    }
+                    Scope scope;
+                    scope.scope = this;
+                    lvalue = scope.execute(string.c_str());
                     break;
             }
         }else {
@@ -596,6 +562,23 @@ Variable* Scope::parse(const char** tokens, size_t size) {
             }
             if(!op) {
                 std::cout<<"unidentified operator "<<tokens[i]<<'\n';
+                return NULL;
+            }
+            if(op->uselvalue) {
+                if(lvalue) {
+                    if(!typecmp(lvalue->get()->type, op->lvalue)) {
+                        std::cout<<"operator "<<op->id<<" requires "<<op->lvalue.id<<" as lvalue\n";
+                        return NULL;
+                    }
+                }else {
+                    std::cout<<"operator "<<op->id<<" needs "<<op->lvalue.id<<" as lvalue\n";
+                    return NULL;
+                }
+                if(lvalue->type.type == 3) {
+                    return lvalue;
+                }
+            }else if(lvalue) {
+                std::cout<<"operator "<<op->id<<" doesn't need a lvalue\n";
                 return NULL;
             }
             if(op->uservalue) {
@@ -645,20 +628,6 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                 rvalue = this->parse(tokens+start, i-start);
                 i--;
             }
-            if(op->uselvalue) {
-                if(lvalue) {
-                    if(!typecmp(lvalue->get()->type, op->lvalue)) {
-                        std::cout<<"operator "<<op->id<<" requires "<<op->lvalue.id<<" as lvalue\n";
-                        return NULL;
-                    }
-                }else {
-                    std::cout<<"operator "<<op->id<<" needs "<<op->lvalue.id<<" as lvalue\n";
-                    return NULL;
-                }
-            }else if(lvalue) {
-                std::cout<<"operator "<<op->id<<" doesn't need a lvalue\n";
-                return NULL;
-            }
             if(op->uservalue) {
                 if(rvalue) {
                     if(!typecmp(rvalue->get()->type, op->rvalue)) {
@@ -678,7 +647,7 @@ Variable* Scope::parse(const char** tokens, size_t size) {
     }
     return lvalue;
 }
-void Scope::execute(const char* text) {
+Variable* Scope::execute(const char* text) {
     for(unsigned int i=0; i<strlen(text); i++) {
         //Lexer
         std::vector<std::string*>* tokens = new std::vector<std::string*>;
@@ -696,7 +665,8 @@ void Scope::execute(const char* text) {
                 }
                 break;
             }
-            if((group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) || checkGroup(text[i]) == 5 || checkGroup(text[i]) == 6) {
+            if((group != checkGroup(text[i]) && !(group == 3 && checkGroup(text[i]) == 2)) || checkGroup(text[i]) == 5 || checkGroup(text[i]) == 6 ||
+                checkGroup(text[i]) == 7 || checkGroup(text[i]) == 8) {
                 if(checkGroup(text[i]) == 4) {
                     break;
                 }
@@ -708,9 +678,34 @@ void Scope::execute(const char* text) {
             }
             if(group != 0) {
                 (*tokens)[j]->push_back(text[i]);
+                if(group == 7) {
+                    tokens->push_back(new std::string());
+                    j++;
+                    i++;
+                    int brackets = 1;
+                    while(i < strlen(text)) {
+                        group = checkGroup(text[i]);
+                        if(group == 7) {
+                            brackets++;
+                        }
+                        if(group == 8) {
+                            brackets--;
+                        }
+                        if(brackets < 1) {
+                            break;
+                        }
+                        (*tokens)[j]->push_back(text[i]);
+                        i++;
+                    }
+                    i--;
+                }
             }
         }
         if(tokens->size() > 0) {
+            for(int i=0; i<tokens->size(); i++) {
+                std::cout<<(*tokens)[i]->c_str()<<',';
+            }
+            std::cout<<'\n';
             //Parser
             const char** tokenstemp = (const char**)malloc(sizeof(const char*)*tokens->size());
             for(unsigned int j=0; j<tokens->size(); j++) {
@@ -722,9 +717,102 @@ void Scope::execute(const char* text) {
                 delete (*tokens)[j];
             }
             //Evaluator
-            std::cout<<*(int*)expr->get()->data<<'\n';
+            if(expr) {
+                std::cout<<*(int*)expr->get()->data<<'\n';
+                if(expr->type.type == 3) {
+                    return expr;
+                }
+            }
             delete expr;
         }
         delete tokens;
     }
+    return NULL;
+}
+
+Variable::Variable(type_t type, const char* id, void* data) {
+    this->scope = NULL;
+    this->type = type;
+    this->id = id;
+    this->data = data;
+    this->cache = NULL;
+}
+Variable::Variable(type_t type, const char* id) : Variable(type, id, malloc(type.size)) {
+}
+Variable::~Variable() {
+    free(this->data);
+}
+Variable* Variable::get() {
+    if(!this->cache) {
+        this->cache = this;
+    }
+    return this->cache;
+}
+void Variable::clearCache() {
+    this->cache = NULL;
+}
+
+Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, bool suffix
+                  ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable(voidtype, id) {
+    this->suffix = suffix;
+    this->priority = priority;
+    this->lvalue = lvalue;
+    this->rvalue = rvalue;
+    this->uselvalue = uselvalue;
+    this->uservalue = uservalue;
+    this->evalf = evalf;
+}
+Operator::~Operator() {
+}
+Variable* Operator::eval(Variable* lvalue, Variable* rvalue) {
+    if(this->evalf) {
+        return this->evalf(lvalue, rvalue);
+    }
+    return NULL;
+}
+
+Expression::Expression(Variable* lvalue, Operator* op, Variable* rvalue) : Variable(voidtype, "") {
+    this->lvalue = lvalue;
+    this->op = op;
+    this->rvalue = rvalue;
+}
+Expression::~Expression() {
+    if(this->op && this->op->suffix) {
+        this->cache = this->op->eval(this->lvalue, this->rvalue);
+    }
+    if(this->lvalue && !this->lvalue->scope && this->lvalue != this->rvalue && this->lvalue != this->cache) {
+        delete this->lvalue;
+    }
+    if(this->rvalue && !this->rvalue->scope && this->rvalue != this->lvalue && this->rvalue != this->cache) {
+        delete this->rvalue;
+    }
+    if(this->cache && !this->cache->scope && this->cache != this->lvalue && this->cache != this->rvalue) {
+        delete this->cache;
+    }
+}
+Variable* Expression::get() {
+    if(this->op && !this->cache) {
+        if(!this->op->suffix) {
+            this->cache = this->op->eval(this->lvalue, this->rvalue);
+        }else {
+            if(this->op->uselvalue) {
+                this->cache = this->lvalue->get();
+            }else {
+                this->cache = this->rvalue->get();
+            }
+        }
+    }
+    return this->cache->get();
+}
+
+Return::Return(Variable* var) : Variable(returntype, "") {
+    *(Variable**)this->data = var;
+}
+Return::~Return() {
+    if(*(Variable**)this->data && !(*(Variable**)this->data)->scope) {
+        delete *(Variable**)this->data;
+    }
+}
+Variable* Return::get() {
+    return (*(Variable**)this->data)->get();
 }

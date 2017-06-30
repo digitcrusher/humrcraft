@@ -24,16 +24,31 @@
 #include <string.h>
 #include <vector>
 
+class Scope;
 class Operator;
 class Variable;
 class Expression;
-class Scope;
+class Return;
 struct type_t {
     const char* id;
     char* opts;
     size_t size;
-    bool number;
-    bool any;
+    int type; //0-everything else, 1-number, 2-anything, 3-return
+};
+class Scope {
+    public:
+        Scope* scope;
+        std::vector<type_t> types;
+        std::vector<Operator*> ops;
+        std::vector<Variable*> vars;
+        Scope();
+        virtual ~Scope();
+        virtual void addType(type_t type);
+        virtual void addOp(Operator* op);
+        virtual void addVar(Variable* var);
+        virtual Variable* getVar(const char* id);
+        virtual Variable* parse(const char** tokens, size_t size);
+        virtual Variable* execute(const char* text);
 };
 class Variable {
     public:
@@ -68,20 +83,14 @@ class Expression : public Variable {
         virtual ~Expression();
         virtual Variable* get();
 };
-class Scope {
+class Return : public Variable {
     public:
-        std::vector<type_t> types;
-        std::vector<Operator*> ops;
-        std::vector<Variable*> vars;
-        Scope();
-        virtual ~Scope();
-        virtual void addType(type_t type);
-        virtual void addOp(Operator* op);
-        virtual void addVar(Variable* var);
-        virtual Variable* parse(const char** tokens, size_t size);
-        virtual void execute(const char* text);
+        Return(Variable* var);
+        virtual ~Return();
+        virtual Variable* get();
 };
 
+extern type_t returntype;
 extern type_t anytype;
 extern type_t voidtype;
 extern type_t inttype;

@@ -1,11 +1,14 @@
 /*
+ * C-like Interpreted Programming Language (CIPL for short) is a mutli-paradigm (imperative) interpreted programming language similar in syntax to C.
+ *
  * CIPL features:
  * -Comments (single and multi-line)
  * -Variables (any integer, pointers)
  * -Basic arithmetic (numbers, operators)
+ * -Scopes (code blocks, return)
  */
 
-//Example demo of these features
+//Example demonstration of these features
 
 //This is a comment
 
@@ -13,7 +16,13 @@
  * This is a multi-line comment
  */
 
-(int a = 4)++;
-int c = a+((10-5)*(1+1))/(int b = 10); //In CIPL you can define new variables anywhere you want!
-int* ptr = &c;
-1 * * &ptr;
+int a = 4;
+a++;
+int result = {
+    {
+        int c = a+((10-5)*(1+1))/(int b = 10); //In CIPL you can define new variables anywhere you want!
+        int* ptr = &c;
+        return 1 * * &ptr;
+    };
+};
+result;
