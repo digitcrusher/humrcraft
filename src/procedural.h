@@ -1,5 +1,5 @@
 /*
- * brainfuck.h
+ * procedural.h
  * textcraft Source Code
  * Available on Github
  *
@@ -18,10 +18,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BRAINFUCK_H
-#define BRAINFUCK_H
+#ifndef PROCEDURAL_H
+#define PROCEDURAL_H
+#include <SDL2/SDL.h>
 
-void execute(const char* code);
-void executeFile(const char* filename);
+#include <time.h>
+#include <math.h>
+#include "graphics.h"
+
+bool tree(SDL_Surface* surface, int color, int seed, int startx, int starty, float startangle, size_t length, size_t lengthdiff
+          ,float rotation, float rotationdiff, float branchchance, float branchangle, float branchanglediff);
 
 #endif

@@ -39,8 +39,8 @@ int checkGroup(char c) {
      * 2 - num
      * 3 - text
      * 4 - eos
-     * 5 - opening paranthesis
-     * 6 - closing paranthesis
+     * 5 - opening parentheses
+     * 6 - closing parentheses
      * 7 - opening curly brackets
      * 8 - closing curly brackets
      */
@@ -433,6 +433,70 @@ Variable* Scope::getVar(const char* id) {
     return NULL;
 }
 Variable* Scope::parse(const char** tokens, size_t size) {
+    auto parseParentheses = [&](const char** tokens, size_t size, unsigned int* offset)->Variable*{
+        unsigned int i=0;
+        if(checkGroup(tokens[i][0]) == 5) {
+            int start = ++i;
+            int parentheses = 1;
+            while(i < size) {
+                int group = checkGroup(tokens[i][0]);
+                if(group == 5) {
+                    parentheses++;
+                }
+                if(group == 6) {
+                    parentheses--;
+                }
+                if(parentheses < 1) {
+                    break;
+                }
+                i++;
+            }
+            if(i == size) {
+                std::cout<<"expected "<<parentheses<<" closing parentheses before end of statement\n";
+                return NULL;
+            }
+            if(offset) {
+                *offset = i;
+            }
+            return this->parse(tokens+start, i-start);
+        }
+        return NULL;
+    };
+    auto parseCurlyBrackets = [&](const char** tokens, size_t size, unsigned int* offset)->Variable*{
+        unsigned int i=0;
+        if(checkGroup(tokens[i][0]) == 7) {
+            std::string string;
+            int brackets = 1;
+            i++;
+            while(i < size) {
+                if(strlen(tokens[i]) == 1) {
+                    int group = checkGroup(tokens[i][0]);
+                    if(group == 7) {
+                        brackets++;
+                    }
+                    if(group == 8) {
+                        brackets--;
+                    }
+                    if(brackets < 1) {
+                        break;
+                    }
+                }
+                string.append(tokens[i]);
+                i++;
+            }
+            if(i == size) {
+                std::cout<<"expected "<<brackets<<" closing curly brackets before end of statement\n";
+                return NULL;
+            }
+            if(offset) {
+                *offset = i;
+            }
+            Scope scope;
+            scope.scope = this;
+            return scope.execute(string.c_str());
+        }
+        return NULL;
+    };
     Variable* lvalue = NULL;
     Operator* op = NULL;
     Variable* rvalue = NULL;
@@ -458,7 +522,21 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                             i++;
                         }
                         Variable* value = this->parse(tokens+start, i-start);
+                        if(!value) {
+                            std::cout<<"return-statement with no value\n";
+                            return NULL;
+                        }
+                        i += i-start;
                         lvalue = new Return(value);
+                    }else if(!strcmp(tokens[i], "if")) {
+                        i++;
+                        Variable* condition = parseParentheses(tokens+i, size-i, &i);
+                        if(condition) {
+                            i++;
+                        }else {
+                            std::cout<<"expected an expression before end of statement\n";
+                            return NULL;
+                        }
                     }else {
                         type_t* type = NULL;
                         for(unsigned int j=0; j<this->types.size(); j++) {
@@ -502,55 +580,11 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                         }
                     }
                     break;
-                case 5: {
-                    int start = ++i;
-                    int paranthesis = 1;
-                    while(i < size) {
-                        group = checkGroup(tokens[i][0]);
-                        if(group == 5) {
-                            paranthesis++;
-                        }
-                        if(group == 6) {
-                            paranthesis--;
-                        }
-                        if(paranthesis < 1) {
-                            break;
-                        }
-                        i++;
-                    }
-                    if(i == size) {
-                        std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
-                        return NULL;
-                    }
-                    lvalue = this->parse(tokens+start, i-start);
-                    }break;
+                case 5:
+                    lvalue = parseParentheses(tokens+i, size-i, &i);
+                    break;
                 case 7:
-                    std::string string;
-                    i++;
-                    int brackets = 1;
-                    while(i < size) {
-                        if(strlen(tokens[i]) == 1) {
-                            group = checkGroup(tokens[i][0]);
-                            if(group == 7) {
-                                brackets++;
-                            }
-                            if(group == 8) {
-                                brackets--;
-                            }
-                            if(brackets < 1) {
-                                break;
-                            }
-                        }
-                        string.append(tokens[i]);
-                        i++;
-                    }
-                    if(i == size) {
-                        std::cout<<"expected "<<brackets<<" closing curly brackets before end of statement\n";
-                        return NULL;
-                    }
-                    Scope scope;
-                    scope.scope = this;
-                    lvalue = scope.execute(string.c_str());
+                    lvalue = parseCurlyBrackets(tokens+i, size-i, &i);
                     break;
             }
         }else {
@@ -601,22 +635,22 @@ Variable* Scope::parse(const char** tokens, size_t size) {
                         }
                         priority = op2->priority;
                     }else if(group == 5) {
-                        int paranthesis = 0;
+                        int parentheses = 0;
                         while(i < size) {
                             group = checkGroup(tokens[i][0]);
                             if(group == 5) {
-                                paranthesis++;
+                                parentheses++;
                             }
                             if(group == 6) {
-                                paranthesis--;
+                                parentheses--;
                             }
-                            if(paranthesis < 1) {
+                            if(parentheses < 1) {
                                 break;
                             }
                             i++;
                         }
                         if(i == size) {
-                            std::cout<<"expected "<<paranthesis<<" closing paranthesis before end of statement\n";
+                            std::cout<<"expected "<<parentheses<<" closing parentheses before end of statement\n";
                             return NULL;
                         }
                     }
@@ -814,5 +848,8 @@ Return::~Return() {
     }
 }
 Variable* Return::get() {
-    return (*(Variable**)this->data)->get();
+    if(*(Variable**)this->data) {
+        return (*(Variable**)this->data)->get();
+    }
+    return NULL;
 }

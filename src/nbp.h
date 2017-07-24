@@ -1,5 +1,5 @@
 /*
- * brainfuck.h
+ * nbp.h Node Based Pathfinding
  * textcraft Source Code
  * Available on Github
  *
@@ -18,10 +18,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef BRAINFUCK_H
-#define BRAINFUCK_H
+#ifndef NBP_H
+#define NBP_H
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 
-void execute(const char* code);
-void executeFile(const char* filename);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+struct NBP_node {
+    int x, y;
+    struct NBP_node** connections;
+    size_t size;
+};
+typedef struct NBP_node NBP_node;
+struct NBP_path {
+    NBP_node** nodes;
+    size_t length;
+};
+typedef struct NBP_path NBP_path;
+
+NBP_node* NBP_createNode(int x, int y);
+void NBP_destroyNode(NBP_node* node);
+void NBP_destroyPath(NBP_path* path);
+bool NBP_connect(NBP_node* node, NBP_node* node1);
+NBP_path* NBP_AStarPathFind(NBP_node* start, NBP_node* goal);
+NBP_path* NBP_TreePathFind(NBP_node* start, NBP_node* goal);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

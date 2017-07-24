@@ -31,6 +31,7 @@
 #include "graphics.h"
 #include "gui.h"
 #include "language.h"
+#include "nbp.h"
 #define RENDERER 1 //0 - SDLRenderer, 1 - Raycaster, 2 - ClassicRenderer
 
 /*GUIProgressBar* progressbar;
@@ -139,6 +140,20 @@ int main(int argc, char** argv) {
         std::cout<<"TTF_Init error: "<<TTF_GetError()<<'\n';
         stop(1);
     }
+    /*NBP_node* start = NBP_createNode(0, 0);
+    NBP_node* mid0 = NBP_createNode(2, 2);
+    NBP_node* mid1 = NBP_createNode(0, 5);
+    NBP_node* goal = NBP_createNode(5, 5);
+    NBP_connect(start, mid0);
+    NBP_connect(mid0, goal);
+    NBP_connect(start, mid1);
+    NBP_connect(mid1, goal);
+    NBP_path* path = NBP_TreePathFind(start, goal);
+    NBP_destroyNode(start);
+    NBP_destroyNode(mid0);
+    NBP_destroyNode(mid1);
+    NBP_destroyNode(goal);
+    NBP_destroyPath(path);*/
     Scope scope;
     std::ifstream file("cfg.cipl");
     file.seekg(0, file.end);

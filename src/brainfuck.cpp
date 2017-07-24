@@ -22,9 +22,8 @@
 #include "brainfuck.h"
 #define size 30000
 
-void execute(const char* code, int type) {
+void execute(const char* code) {
     char array[size] = {0};
-    char storage = 0;
     char* ptr = array;
     for(unsigned int i=0; code[i] && code[i] != '@'; i++) {
         switch(code[i]) {
@@ -73,40 +72,12 @@ void execute(const char* code, int type) {
                 }
                 break;
         }
-        if(type == ExType1) { //TODO: logical shift
-            switch(code[i]) {
-                case '$':
-                    storage = *ptr;
-                    break;
-                case '!':
-                    *ptr = storage;
-                    break;
-                case '{':
-                    *ptr >>= 1;
-                    break;
-                case '}':
-                    *ptr <<= 1;
-                    break;
-                case '~':
-                    *ptr = ~*ptr;
-                    break;
-                case '^':
-                    *ptr ^= storage;
-                    break;
-                case '&':
-                    *ptr &= storage;
-                    break;
-                case '|':
-                    *ptr |= storage;
-                    break;
-            }
-        }
     }
 }
-void executeFile(const char* filename, int type) {
+void executeFile(const char* filename) {
     char code[size+1] = {0};
     FILE* file = fopen(filename, "r");
     fread(code, sizeof(*code), size, file);
     fclose(file);
-    execute(code, type);
+    execute(code);
 }
