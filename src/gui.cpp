@@ -1,6 +1,6 @@
 /*
  * gui.cpp
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -18,11 +18,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "graphics.h"
-#include "gui.h"
+#include "graphics.hpp"
+#include "gui.hpp"
 
-GUIWidget::GUIWidget() {
-    this->family.pushBack("GUIWidget");
+GUI_Widget::GUI_Widget() {
+    this->family.pushBack("GUI_Widget");
     this->time = 0;
     this->eventListener = NULL;
     this->enable = 1;
@@ -35,57 +35,57 @@ GUIWidget::GUIWidget() {
     this->w = 0;
     this->h = 0;
 }
-GUIWidget::~GUIWidget() {
+GUI_Widget::~GUI_Widget() {
 }
-GUIWidget* GUIWidget::setTime(float time) {
+GUI_Widget* GUI_Widget::setTime(float time) {
     this->time = time;
     return this;
 }
-GUIWidget* GUIWidget::setEventListener(void (*eventListener)(int state)) {
+GUI_Widget* GUI_Widget::setEventListener(void (*eventListener)(int state)) {
     this->eventListener = eventListener;
     return this;
 }
-GUIWidget* GUIWidget::setEnabled(bool enable) {
+GUI_Widget* GUI_Widget::setEnabled(bool enable) {
     this->enable = enable;
     return this;
 }
-GUIWidget* GUIWidget::setVisibility(bool visible) {
+GUI_Widget* GUI_Widget::setVisibility(bool visible) {
     this->visible = visible;
     return this;
 }
-GUIWidget* GUIWidget::setState(int state) {
+GUI_Widget* GUI_Widget::setState(int state) {
     this->state = state;
     return this;
 }
-GUIWidget* GUIWidget::setBGColor(SDL_Color bgcolor) {
+GUI_Widget* GUI_Widget::setBGColor(SDL_Color bgcolor) {
     this->bgcolor = bgcolor;
     return this;
 }
-GUIWidget* GUIWidget::setFGColor(SDL_Color fgcolor) {
+GUI_Widget* GUI_Widget::setFGColor(SDL_Color fgcolor) {
     this->fgcolor = fgcolor;
     return this;
 }
-GUIWidget* GUIWidget::setPosition(int x, int y) {
+GUI_Widget* GUI_Widget::setPosition(int x, int y) {
     this->x = x;
     this->y = y;
     return this;
 }
-GUIWidget* GUIWidget::setSize(int w, int h) {
+GUI_Widget* GUI_Widget::setSize(int w, int h) {
     this->w = w;
     this->h = h;
     return this;
 }
-GUIWidget* GUIWidget::setBounds(int x, int y, int w, int h) {
+GUI_Widget* GUI_Widget::setBounds(int x, int y, int w, int h) {
     this->x = x;
     this->y = y;
     this->w = w;
     this->h = h;
     return this;
 }
-void GUIWidget::update(float delta) {
+void GUI_Widget::update(float delta) {
     this->time += delta;
 }
-void GUIWidget::render(SDL_Surface* surface) {
+void GUI_Widget::render(SDL_Surface* surface) {
     if(!this->visible) return;
     uint8_t r, g, b, a;
     if(this->enable) {
@@ -102,7 +102,7 @@ void GUIWidget::render(SDL_Surface* surface) {
     SDL_Rect rect = {this->x, this->y, this->w, this->h};
     SDL_FillRect(surface, &rect, SDL_MapRGBA(surface->format, r, g, b, a));
 }
-void GUIWidget::processEvent(SDL_Event event) {
+void GUI_Widget::processEvent(SDL_Event event) {
     int laststate = this->state;
     switch(event.type) {
         case SDL_MOUSEBUTTONDOWN:
@@ -143,19 +143,19 @@ void GUIWidget::processEvent(SDL_Event event) {
     }
 }
 
-GUIFrame::GUIFrame() : GUIWidget() {
-    this->family.pushBack("GUIFrame");
+GUI_Frame::GUI_Frame() : GUI_Widget() {
+    this->family.pushBack("GUI_Frame");
 }
-GUIFrame::~GUIFrame() {
+GUI_Frame::~GUI_Frame() {
 }
-void GUIFrame::update(float delta) {
-    GUIWidget::update(delta);
+void GUI_Frame::update(float delta) {
+    GUI_Widget::update(delta);
     for(unsigned int i=0; i<this->widgets.size(); i++) {
         this->widgets[i]->update(delta);
     }
 }
-void GUIFrame::render(SDL_Surface* surface) {
-    GUIWidget::render(surface);
+void GUI_Frame::render(SDL_Surface* surface) {
+    GUI_Widget::render(surface);
     int rmask, gmask, bmask, amask;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
     rmask = 0xff000000;
@@ -176,32 +176,32 @@ void GUIFrame::render(SDL_Surface* surface) {
     drawImage(surface2, this->x, this->y, surface);
     SDL_FreeSurface(surface2);
 }
-void GUIFrame::add(GUIWidget* widget) {
+void GUI_Frame::add(GUI_Widget* widget) {
     this->widgets.pushBack(widget);
 }
-void GUIFrame::processEvent(SDL_Event event) {
-    GUIWidget::processEvent(event);
+void GUI_Frame::processEvent(SDL_Event event) {
+    GUI_Widget::processEvent(event);
     for(unsigned int i=0; i<this->widgets.size(); i++) {
         this->widgets[i]->processEvent(event);
     }
 }
 
-GUILabel::GUILabel(TTF_Font* font, const char* text) : GUIWidget() {
-    this->family.pushBack("GUILabel");
+GUI_Label::GUI_Label(TTF_Font* font, const char* text) : GUI_Widget() {
+    this->family.pushBack("GUI_Label");
     this->font = font;
     this->text = text;
 }
-GUILabel::~GUILabel() {
+GUI_Label::~GUI_Label() {
 }
-GUILabel* GUILabel::setFont(TTF_Font* font) {
+GUI_Label* GUI_Label::setFont(TTF_Font* font) {
     this->font = font;
     return this;
 }
-GUILabel* GUILabel::setText(const char* text) {
+GUI_Label* GUI_Label::setText(const char* text) {
     this->text = text;
     return this;
 }
-void GUILabel::render(SDL_Surface* surface) {
+void GUI_Label::render(SDL_Surface* surface) {
     uint8_t r, g, b, a;
     if(this->enable) {
         r = this->bgcolor.r;
@@ -232,12 +232,12 @@ void GUILabel::render(SDL_Surface* surface) {
     SDL_BlitSurface(text, &srcrect, surface, &dstrect);
 }
 
-GUIButton::GUIButton() : GUIFrame() {
+GUI_Button::GUI_Button() : GUI_Frame() {
 }
-GUIButton::~GUIButton() {
+GUI_Button::~GUI_Button() {
 }
-void GUIButton::render(SDL_Surface* surface) {
-    GUIWidget::render(surface);
+void GUI_Button::render(SDL_Surface* surface) {
+    GUI_Widget::render(surface);
     uint8_t r, g, b, a;
     if(this->enable) {
         r = this->bgcolor.r-(this->state == Press)*128;
@@ -304,17 +304,17 @@ void GUIButton::render(SDL_Surface* surface) {
     SDL_FreeSurface(surface2);
 }
 
-GUIProgressBar::GUIProgressBar() : GUIWidget() {
+GUI_ProgressBar::GUI_ProgressBar() : GUI_Widget() {
     this->progress = 0;
 }
-GUIProgressBar::~GUIProgressBar() {
+GUI_ProgressBar::~GUI_ProgressBar() {
 }
-GUIProgressBar* GUIProgressBar::setProgress(float progress) {
+GUI_ProgressBar* GUI_ProgressBar::setProgress(float progress) {
     this->progress = progress;
     return this;
 }
-void GUIProgressBar::render(SDL_Surface* surface) {
-    GUIWidget::render(surface);
+void GUI_ProgressBar::render(SDL_Surface* surface) {
+    GUI_Widget::render(surface);
     uint8_t r, g, b, a;
     if(this->enable) {
         r = this->fgcolor.r;

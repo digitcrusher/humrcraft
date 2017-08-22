@@ -1,6 +1,6 @@
 /*
  * renderers.cpp
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -18,46 +18,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "renderers.h"
-#include "shapes.h"
-#include "graphics.h"
-#include <utils/utils.h>
-#include <window/terminal.h>
 #include <iostream>
+#include "renderers.hpp"
+#include "graphics.hpp"
 
 SDLRenderer::SDLRenderer(const char* title, int w, int h) : Renderer() {
     this->family.pushBack("SDLRenderer");
-    this->window = SDL_CreateWindow(title,
-                                    SDL_WINDOWPOS_CENTERED,
-                                    SDL_WINDOWPOS_CENTERED,
+    if(!(this->window = SDL_CreateWindow(title,
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    SDL_WINDOWPOS_UNDEFINED,
                                     w,
                                     h,
                                     SDL_WINDOW_SHOWN |
                                     SDL_WINDOW_RESIZABLE |
                                     SDL_WINDOW_MOUSE_FOCUS |
-                                    SDL_WINDOW_INPUT_FOCUS);
-    int rmask, gmask, bmask, amask;
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    rmask = 0xff000000;
-    gmask = 0x00ff0000;
-    bmask = 0x0000ff00;
-    amask = 0x000000ff;
-#else
-    rmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    bmask = 0x00ff0000;
-    amask = 0xff000000;
-#endif
-    SDL_Surface* screen = SDL_GetWindowSurface(this->window);
-    this->buffer = SDL_CreateRGBSurface(0, screen->w, screen->h, 32, rmask, gmask, bmask, amask);
+                                    SDL_WINDOW_INPUT_FOCUS))) {
+        std::cerr<<"SDL_CreateWindow error: "<<SDL_GetError()<<'\n';
+        throw;
+    }
+    this->buffer = NULL;
+    this->zoom = 1;
 }
 SDLRenderer::~SDLRenderer() {
     SDL_DestroyWindow(this->window);
-    SDL_FreeSurface(this->buffer);
+    if(this->buffer) SDL_FreeSurface(this->buffer);
 }
 void SDLRenderer::begin() {
     Renderer::begin();
-    SDL_FreeSurface(this->buffer);
+    if(!this->buffer) SDL_FreeSurface(this->buffer);
     int rmask, gmask, bmask, amask;
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
     rmask = 0xff000000;
@@ -133,156 +121,94 @@ void SDLRenderer::drawRectangle(V2f pos1, V2f pos2, int color) {
     ::drawRectangle(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
 }
 int SDLRenderer::drawImage(V2f pos, SDL_Surface* image) {
-    V2i p = this->mapPos(pos);
+    V2i p = this->mapPos(pos)-(V2i){image->w/2, image->h/2};
     return ::drawImage(image, p.x, p.y, this->buffer);
 }
 
-Raycaster::Raycaster(const char* title, int w, int h) : SDLRenderer(title, w, h) {
-    this->family.pushBack("Raycaster");
-    this->fov = M_PI/2;
-    this->fos = 25;
-}
-Raycaster::~Raycaster() {
-}
-void Raycaster::begin() {
-    SDLRenderer::begin();
-}
-void Raycaster::end() {
-    this->raycast(0, this->buffer->w);
-    SDLRenderer::end();
-}
-void Raycaster::raycast(int sx, int ex) {
-    //int fogr=0, fogg=0, fogb=0;
-    //int fogr=31, fogg=31, fogb=31;
-    //int fogr=63, fogg=63, fogb=63;
-    //int fogr=127, fogg=127, fogb=127;
-    int fogr=255, fogg=255, fogb=255;
-    float sa=sx/(this->buffer->w/this->fov), ea=ex/(this->buffer->w/this->fov);
-    Object* ray = new Object(new Circle(0));
-    float rayvel = 1;
-    for(float i=sa; i<this->fov && i<ea; i+=this->fov/this->buffer->w) {
-        float distance = 0;
-        bool loop = 1;
-        KL_Vector<float> collisionsd;
-        KL_Vector<V2f> collisionsa;
-        KL_Vector<Object*> collisions;
-        ray->pos = Object::getPos();
-        ray->vel = {rayvel, this->getOri().y+this->fov/2-i};
-        while(loop && distance < this->fos) {
-            for(unsigned int i=0; i<this->world->objs.size(); i++) {
-                if(!this->world->objs.isFree(i)) {
-                    Object* obj = this->world->objs[i];
-                    if(obj->shape && checkCollision(NULL, ray, obj)) {
-                        collisionsd.pushBack(distance);
-                        collisionsa.pushBack({0, fatp(obj->getPos(), ray->getPos())});
-                        collisions.pushBack(obj);
-                        if(obj->shape->a >= 255) {
-                            loop = 0;
-                        }
-                        break;
-                    }
-                }
-            }
-            ray->update(1);
-            distance += rayvel;
-        }
-        if(collisions.size() > 0) {
-            for(int j=collisions.size(); j-->0;) {
-                if(collisions[j]->shape) {
-                    float wallh = this->buffer->h/this->zoom;
-                    int height = (wallh-collisionsd[j])*this->zoom;
-                    if(height > 0) {
-                        int sx=this->buffer->w/this->fov*i, sy=this->buffer->h/2-height/2;
-                        int ey=this->buffer->h/2+height/2;
-                        if(collisions[j]->shape->texmode) {
-                            for(int k=0; k<ey-sy; k++) {
-                                uint8_t r, g, b, a;
-                                int x=(collisions[j]->shape->texture->w-1)/(M_PI*2)*(collisionsa[j].y+collisions[j]->shape->getOri().y);
-                                int y=(float)(collisions[j]->shape->texture->h-1)/(ey-sy)*k;
-                                SDL_GetRGBA(::getPixel(collisions[j]->shape->texture, x, y)
-                                                     ,collisions[j]->shape->texture->format, &r, &g, &b, &a);
-                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(r, g, b, a));
-                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(fogr, fogg, fogb, 255/this->fos*collisionsd[j]*((float)a/255)));
-                            }
-                        }else {
-                            for(int k=0; k<ey-sy; k++) {
-                                uint8_t r, g, b, a;
-                                r = collisions[j]->shape->r, g = collisions[j]->shape->g, b = collisions[j]->shape->b, a = collisions[j]->shape->a;
-                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(r, g, b, a));
-                                ::drawPixel(this->buffer, sx, sy+k, this->mapRGBA(fogr, fogg, fogb, 255/this->fos*collisionsd[j]*((float)a/255)));
-                            }
-                        }
-                    }
-                }
-            }
-        }
+SDLGLRenderer::SDLGLRenderer(const char* title, int w, int h, int mayorv, int minorv) : Renderer() {
+    this->family.pushBack("SDLGLRenderer");
+    this->w = w;
+    this->h = h;
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, mayorv);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorv);
+    if(!(this->window = SDL_CreateWindow(title,
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    this->w,
+                                    this->h,
+                                    SDL_WINDOW_OPENGL |
+                                    SDL_WINDOW_SHOWN |
+                                    SDL_WINDOW_RESIZABLE |
+                                    SDL_WINDOW_MOUSE_FOCUS |
+                                    SDL_WINDOW_INPUT_FOCUS))) {
+        std::cerr<<"SDL_CreateWindow error: "<<SDL_GetError()<<'\n';
+        throw;
+    }
+    if(!(this->context = SDL_GL_CreateContext(this->window))) {
+        std::cerr<<"SDL_GL_CreateContext error: "<<SDL_GetError()<<'\n';
+        throw;
+    }
+    this->zoom = 1;
+    bool fail=0;
+    GLenum error = GL_NO_ERROR;
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cout<<"OpenGL initialization error: "<<gluErrorString(error)<<'\n';
+        fail = 1;
+    }
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cout<<"OpenGL initialization error: "<<gluErrorString(error)<<'\n';
+        fail = 1;
+    }
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cout<<"OpenGL initialization error: "<<gluErrorString(error)<<'\n';
+        fail = 1;
+    }
+    glClearColor(0, 0, 0, 1);
+    error = glGetError();
+    if(error != GL_NO_ERROR) {
+        std::cout<<"OpenGL initialization error: "<<gluErrorString(error)<<'\n';
+        fail = 1;
+    }
+    if(fail) {
+        throw;
     }
 }
-void Raycaster::drawPixel(V2f pos, int color) {
+SDLGLRenderer::~SDLGLRenderer() {
+    SDL_DestroyWindow(this->window);
 }
-void Raycaster::drawCircle(V2f pos, int r, int color) {
+void SDLGLRenderer::begin() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);
+    glTranslatef(-this->glMapPos(Object::getPos()).x, -this->glMapPos(Object::getPos()).y, 0);
+    SDL_GetWindowSize(this->window, &this->w, &this->h);
+    glViewport(0, 0, this->w, this->h);
 }
-void Raycaster::drawSquare(V2f pos, V2f rot, int sidelen, int color) {
+void SDLGLRenderer::end() {
+    SDL_GL_SwapWindow(this->window);
 }
-void Raycaster::drawEllipse(V2f pos1, V2f pos2, int color) {
+bool SDLGLRenderer::getEvent(SDL_Event* event) {
+    return SDL_PollEvent(event);
 }
-void Raycaster::drawLine(V2f pos1, V2f pos2, int color) {
+V2f SDLGLRenderer::glMapPos(V2f pos) {
+    return {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
 }
-void Raycaster::drawRectangle(V2f pos1, V2f pos2, int color) {
+V2f SDLGLRenderer::glGetPos(V2f pos) {
+    return {pos.x/this->zoom/(1/(this->w/2)), pos.y/this->zoom/(1/(this->h/2))};
 }
-int Raycaster::drawImage(V2f pos, SDL_Surface* image) {
-    return 0;
+V2i SDLGLRenderer::mapPos(V2f pos) {
+    return {this->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
 }
-
-ClassicRenderer::ClassicRenderer(int w, int h) : Renderer() {
-    this->family.pushBack("ClassicRenderer");
-    this->size.x = w;
-    this->size.y = h;
-    this->zbuff = (float*)malloc(sizeof(float)*this->size.x*this->size.y);
-    this->screen = (char*)malloc(sizeof(char)*this->size.x*this->size.y);
-    this->ticks = 0;
-    this->frames = 0;
-}
-ClassicRenderer::~ClassicRenderer() {
-    free(this->zbuff);
-    free(this->screen);
-}
-void ClassicRenderer::begin() {
-    Renderer::begin();
-    this->fbefore = KL_stdterm->flags;
-    KL_stdterm->flags = TERMINAL_DEFAULT_FLAGS-(TERMINAL_N_UPDATE*TERMINAL_DEFAULT_FLAGS & TERMINAL_N_UPDATE);
-    KL_flush(KL_stdterm, TERMINAL_OUTPUT);
-    memset(this->zbuff, 0, sizeof(float)*this->size.x*this->size.y);
-    memset(this->screen, '\0', sizeof(char)*this->size.x*this->size.y);
-}
-void ClassicRenderer::end() {
-    for(int y=0; y<this->size.y; y++) {
-        for(int x=0; x<this->size.x; x++) {
-            KL_cwrite(KL_stdterm, *(this->screen+x+y*this->size.x));
-        }
-        KL_cwrite(KL_stdterm, '\n');
-    }
-	KL_swritef(KL_stdterm, "%d TPS\n%d FPS\n", this->ticks, this->frames);
-    KL_stdterm->flags = this->fbefore;
-    KL_updateTerminal(KL_stdterm);
-    Renderer::end();
-}
-void ClassicRenderer::draw(char c, V3f pos) {
-    V2f p = {this->size.x/2+(pos.x-this->pos.x), this->size.y/2-(pos.y-this->pos.y)};
-    if(squareInSquare({0, 0, (float)this->size.x-1, (float)this->size.y-1}
-               ,{p.x, p.y, p.x, p.y})) {
-        if(pos.z >= *(this->zbuff+(int)p.x+(int)p.y*this->size.x)) {
-            *(this->zbuff+(int)p.x+(int)p.y*this->size.x) = pos.z;
-            *(this->screen+(int)p.x+(int)p.y*this->size.x) = c;
-        }
-    }
-}
-ClassicRenderer ClassicRenderer::operator=(const ClassicRenderer& rvalue) {
-    Renderer::operator=(rvalue);
-    this->size = rvalue.size;
-    this->zbuff = (float*)realloc(this->zbuff, sizeof(float)*this->size.x*this->size.y);
-    this->screen = (char*)realloc(this->screen, sizeof(char)*this->size.x*this->size.y);
-    memcpy(this->zbuff, rvalue.zbuff, sizeof(float)*this->size.x*this->size.y);
-    memcpy(this->screen, rvalue.screen, sizeof(char)*this->size.x*this->size.y);
-    return *this;
+V2f SDLGLRenderer::getPos(V2i pos) {
+    return {(float)(pos.x-this->w/2)/this->zoom+Object::getPos().x, (float)(this->h/2-pos.y)/this->zoom+Object::getPos().y};
 }

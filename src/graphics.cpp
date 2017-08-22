@@ -1,6 +1,6 @@
 /*
  * graphics.cpp
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -18,10 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "graphics.h"
-#include <utils/math.h>
-#include <math.h>
-#include "shapes.h"
+#include "graphics.hpp"
+#include "math.hpp"
 
 int getPixel(SDL_Surface* surface, int x, int y) {
     if(squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}

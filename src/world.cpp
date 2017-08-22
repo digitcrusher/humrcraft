@@ -1,6 +1,6 @@
 /*
  * world.cpp
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -18,67 +18,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <math.h>
 #include <iostream>
-#include "world.h"
-#include "graphics.h"
-#include "shapes.h"
-#include "renderers.h"
-
-bool checkCollision(manifold* manifold, Object* a, Object* b) {
-    if(a->shape && b->shape) {
-        V2f angle;
-        angle.y = (float)fatp(a->getPos(), b->getPos());
-        float ra = a->shape->getRadius(angle);
-        float rb = b->shape->getRadius(angle+(V2f){0, M_PI});
-        V2f pos1 = {(float)fmax(a->getPos().x, b->getPos().x), (float)fmax(a->getPos().y, b->getPos().y)};
-        V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
-        float penetration = ra+rb-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
-        if(manifold) {
-            manifold->a = a;
-            manifold->b = b;
-            manifold->angle = angle;
-            manifold->penetration = penetration;
-        }
-        if(penetration > 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-bool resolveCollision(manifold manifold) {
-    if(manifold.a->shape && manifold.b->shape) {
-        if(manifold.penetration > 0) {
-            float e, na, nb, ma, mb, pa, pb, f;
-
-            e = fmin(manifold.a->shape->restitution, manifold.b->shape->restitution); //restitution
-            na = manifold.a->shape->getNormal(manifold.angle).y; //normal a
-            nb = manifold.b->shape->getNormal(manifold.angle+(V2f){0, M_PI}).y; //normal b
-            if(manifold.a->shape->invmass) {
-                ma = manifold.a->shape->invmass;
-            }else {
-                ma = 1;
-            }
-            if(manifold.b->shape->invmass) {
-                mb = manifold.b->shape->invmass;
-            }else {
-                mb = 1;
-            }
-            pa = manifold.a->getVel().x/ma;
-            pb = manifold.b->getVel().x/mb;
-
-            f = (pa+pb)*cos(manifold.a->getVel().y-nb)*-(1+e)/2+manifold.penetration;
-
-            manifold.a->applyImpulse({f, nb});
-
-            f = (pa+pb)*cos(manifold.b->getVel().y-na)*-(1+e)/2+manifold.penetration;
-
-            manifold.b->applyImpulse({f, na});
-            return 1;
-        }
-    }
-    return 0;
-}
+#include "renderers.hpp"
+#include "world.hpp"
 
 Object::Object(Shape* shape) {
     this->id = 0;
@@ -93,10 +35,10 @@ Object::Object(Shape* shape) {
     this->ori = {0, 0};
     this->vel = {0, 0};
     this->rot = {0, 0};
+    this->stationary = 0;
 }
-Object::Object(Shape* shape, V2f pos, V2f ori) : Object(shape) {
-    this->pos = pos;
-    this->ori = ori;
+Object::Object(Shape* shape, bool stationary) : Object(shape) {
+    this->stationary = stationary;
 }
 Object::~Object() {
     if(this->world) {
@@ -110,17 +52,24 @@ void Object::update(double delta) {
     if(this->shape) {
         this->shape->update(delta);
     }
-    this->pos.x += cos(this->vel.y)*this->vel.x*delta;
-    this->pos.y += sin(this->vel.y)*this->vel.x*delta;
-    this->ori.y += rot.y;
+    if(!this->stationary) {
+        this->pos.x += cos(this->vel.y)*this->vel.x*delta;
+        this->pos.y += sin(this->vel.y)*this->vel.x*delta;
+        this->ori.y += rot.y;
+    }
 //    if(this->world) {
-//        this->vspd *= 1-this->world->friction*this->invmass*delta;
+//        this->vspd *= 1-this->world->friction*this->getInvMass()*delta;
 //    }
     this->time += delta;
 }
 void Object::render(Renderer* renderer) {
     if(this->shape) {
         this->shape->render(renderer);
+    }
+}
+void Object::speak(Speaker* speaker) {
+    if(this->shape) {
+        this->shape->speak(speaker);
     }
 }
 V2f Object::getPos() {
@@ -136,23 +85,35 @@ V2f Object::getVel() {
 V2f Object::getRot() {
     return this->rot;
 }
+void Object::setAbsPos(V2f pos) {
+    this->pos = pos;
+}
+void Object::setAbsOri(V2f ori) {
+    this->ori = ori;
+}
+void Object::setAbsVel(V2f vel) {
+    this->vel = vel;
+}
+void Object::setAbsRot(V2f rot) {
+    this->rot = rot;
+}
 void Object::applyImpulse(V2f j) {
-    float m;
-    if(this->shape && this->shape->invmass) {
-        m = this->shape->invmass;
-    }else {
-        m = 1;
+    if(this->shape && !isinf(j.x)) {
+        this->vel = carteToPolar(polarToCarte({j.x*(isinf(this->shape->getInvMass())?1:this->shape->getInvMass()), j.y})+polarToCarte(this->vel));
     }
-    this->vel = carteToPolar(polarToCarte({j.x*m, j.y})+polarToCarte(this->vel));
 }
 void Object::applyTorque(V2f t) {
-    float m;
-    if(this->shape && this->shape->invmass) {
-        m = this->shape->invmass;
-    }else {
-        m = 1;
+    if(this->shape && !isinf(t.x)) {
+        this->rot.y = this->rot.y+t.y*(1/t.x*(isinf(this->shape->getInvMass())?1:this->shape->getInvMass()));
     }
-    this->rot.y = this->rot.y+t.y*(1/t.x*m);
+}
+bool Object::checkFamily(Object* obj, const char* member, unsigned int level) {
+    return level < obj->family.size() && !strcmp(obj->family[level], member);
+}
+void Object::collisionCallback(manifold* manifold) {
+    if(this->shape) {
+        this->shape->collisionCallback(manifold);
+    }
 }
 Object& Object::operator=(const Object& rvalue) {
     this->time = rvalue.time;
@@ -208,6 +169,20 @@ void World::render() {
         offset = renderer->id+1;
     }
 }
+void World::speak() {
+    Speaker* speaker;
+    unsigned int offset = 0;
+    while((speaker = (Speaker*)this->getObject("Speaker", 1, offset))) {
+        speaker->begin();
+        for(unsigned int i=0; i<this->objs.size(); i++) {
+            if(!this->objs.isFree(i)) {
+                this->objs[i]->speak(speaker);
+            }
+        }
+        speaker->end();
+        offset = speaker->id+1;
+    }
+}
 int World::add(Object* obj) {
     obj->world = this;
     return (obj->id = this->objs.add(obj));
@@ -249,7 +224,7 @@ Object* World::getObject(unsigned int id) {
 }
 Object* World::getObject(const char* member, unsigned int level) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
-        if(level < this->objs[i]->family.size() && !strcmp(this->objs[i]->family[level], member) && !this->objs.isFree(i)) {
+        if(this->checkFamily(this->objs[i], member, level) && !this->objs.isFree(i)) {
             return this->objs[i];
         }
     }
@@ -257,40 +232,9 @@ Object* World::getObject(const char* member, unsigned int level) {
 }
 Object* World::getObject(const char* member, unsigned int level, unsigned int offset) {
     for(unsigned int i=offset; i<this->objs.size(); i++) {
-        if(level < this->objs[i]->family.size() && !strcmp(this->objs[i]->family[level], member) && !this->objs.isFree(i)) {
+        if(this->checkFamily(this->objs[i], member, level) && !this->objs.isFree(i)) {
             return this->objs[i];
         }
-    }
-    return NULL;
-}
-void World::generate(int seed, V2f mins, V2f maxs) {
-    srand(seed);
-    for(unsigned int i=0; i<this->thingtypes.size(); i++) {
-        if(this->thingtypes[i]->generation.generate) {
-            for(int x=mins.x; x<maxs.x; x++) {
-                for(int y=mins.y; y<maxs.y; y++) {
-                    srand(rand());
-                    int n = rand()%(int)(1/this->thingtypes[i]->generation.occurence);
-                    if(n == 1) {
-                        Thing* thing = this->createThing(i);
-                        thing->pos = {(float)x, (float)y};
-                        this->add(thing);
-                    }
-                }
-            }
-        }
-    }
-}
-unsigned int World::registerThing(Thing* thing) {
-    return this->thingtypes.add(thing);
-}
-Thing* World::createThing(unsigned int type) {
-    if(type < this->thingtypes.size()) {
-        Thing* temp = this->thingtypes[type];
-        Thing* thing = new Thing(temp->health, temp->attack, temp->generation
-                                ,temp->updatef, temp->renderf);
-        thing->type = type;
-        return thing;
     }
     return NULL;
 }
@@ -304,44 +248,20 @@ World& World::operator=(const World& rvalue) {
 
 Shape::Shape() : Object(NULL) {
     this->family.pushBack("Shape");
-    this->restitution = 1;
-    this->invmass = 1;
+    this->mat = {0, 0};
     this->r = 255;
     this->g = 255;
     this->b = 255;
     this->a = 255;
-    this->texture = NULL;
-    this->texmode = 0;
 }
-Shape::Shape(float restitution, float mass) : Shape() {
-    this->restitution = restitution;
-    if(mass != 0) {
-        this->invmass = 1/mass;
-    }else {
-        this->invmass = 0;
-    }
+Shape::Shape(material mat) : Shape() {
+    this->mat = mat;
 }
-Shape::Shape(float restitution, float mass, int r, int g, int b, int a) : Shape(restitution, mass) {
+Shape::Shape(material mat, int r, int g, int b, int a) : Shape(mat) {
     this->r = r;
     this->g = g;
     this->b = b;
     this->a = a;
-    this->texmode = 0;
-}
-Shape::Shape(float restitution, float mass, SDL_Surface* texture) : Shape(restitution, mass) {
-    this->texture = texture;
-    this->texmode = 1;
-    bool loop = 1;
-    for(int x=0; x<this->texture->w && loop; x++) {
-        for(int y=0; y<this->texture->h && loop; y++) {
-            uint8_t r, g, b, a;
-            SDL_GetRGBA(::getPixel(this->texture, x, y), this->texture->format, &r, &g, &b, &a);
-            if(a<255) {
-                this->a = 0;
-                loop = 0;
-            }
-        }
-    }
 }
 Shape::~Shape() {
 }
@@ -350,6 +270,9 @@ void Shape::update(double delta) {
 }
 void Shape::render(Renderer* renderer) {
     Object::render(renderer);
+}
+void Shape::speak(Speaker* speaker) {
+    Object::speak(speaker);
 }
 V2f Shape::getPos() {
     return {this->obj->getPos().x+this->pos.x*(float)cos(this->obj->getOri().y)
@@ -364,16 +287,33 @@ V2f Shape::getVel() {
 V2f Shape::getRot() {
     return this->rot+this->obj->getRot();
 }
-float Shape::getRadius(V2f angle) {
-    return 0;
+void Shape::setAbsPos(V2f pos) {
+    this->pos = pos-this->obj->getPos();
+}
+void Shape::setAbsOri(V2f ori) {
+    this->ori = ori-this->obj->getOri();
+}
+void Shape::setAbsVel(V2f vel) {
+    this->vel = vel-this->obj->getVel();
+}
+void Shape::setAbsRot(V2f rot) {
+    this->rot = rot-this->obj->getRot();
+}
+float Shape::getVolume() {
+    return 1;
+}
+float Shape::getInvMass() {
+    return 1/(this->getVolume()*this->mat.density);
+}
+V2f Shape::getRadius(V2f angle) {
+    return {0, angle.y};
 }
 V2f Shape::getNormal(V2f angle) {
     return {angle.y+(float)M_PI, 0};
 }
 Shape& Shape::operator=(const Shape& rvalue) {
     Object::operator=(rvalue);
-    this->restitution = rvalue.restitution;
-    this->invmass = rvalue.invmass;
+    this->mat = mat;
     this->r = rvalue.r;
     this->g = rvalue.g;
     this->b = rvalue.b;
@@ -383,7 +323,6 @@ Shape& Shape::operator=(const Shape& rvalue) {
 
 Renderer::Renderer() : Object(NULL) {
     this->family.pushBack("Renderer");
-    this->zoom = 1;
 }
 Renderer::~Renderer() {
 }
@@ -396,148 +335,205 @@ Renderer& Renderer::operator=(const Renderer& rvalue) {
     return *this;
 }
 
-Thing::Thing(float health, float attack, genSettings generation
-            ,void (*updatef)(Thing* thing, double delta)
-            ,void (*renderf)(Thing* thing, Renderer* context)) : Object(new Circle(1)) {
-    this->family.pushBack("Thing");
-    this->type = 0;
-    this->bagcurr = 0;
-    this->generation = generation;
-    this->deathcounter = 0;
-    this->deathtime = 60;
-    this->delay = 0;
-    this->health = health;
-    this->attack = attack;
-    this->updatef = updatef;
-    this->renderf = renderf;
+Speaker::Speaker() : Object(NULL) {
+    this->family.pushBack("Speaker");
+    SDL_AudioSpec wanted;
+    memset(&wanted, 0, sizeof(wanted));
+    wanted.freq = 11025;
+    wanted.format = AUDIO_U8;
+    wanted.channels = 1;
+    wanted.samples = 4096;
+    wanted.callback = this->audioCallback;
+    wanted.userdata = this;
+    if(!(this->device = SDL_OpenAudioDevice(NULL, 0, &wanted, &this->spec, SDL_AUDIO_ALLOW_FORMAT_CHANGE))) {
+        std::cerr<<"SDL_OpenAudioDevice error: "<<SDL_GetError()<<'\n';
+        throw;
+    }
+    this->pauseAudio(0);
 }
-Thing::~Thing() {
-    if(this->world) {
-        for(unsigned int i=0; i<this->bag.size(); i++) {
-            this->bagcurr = i;
-            drop();
+Speaker::~Speaker() {
+    SDL_CloseAudioDevice(this->device);
+}
+void Speaker::begin() {
+}
+void Speaker::end() {
+}
+void Speaker::playAudio(const char* filename) {
+    SDL_LockAudioDevice(this->device);
+    uint8_t* buffer;
+    uint32_t length;
+    SDL_AudioSpec spec=this->spec;
+    if(!SDL_LoadWAV(filename, &spec, &buffer, &length)) {
+        SDL_UnlockAudioDevice(this->device);
+        return;
+    }
+    SDL_AudioCVT cvt;
+    SDL_BuildAudioCVT(&cvt, spec.format, spec.channels, spec.freq, this->spec.format, this->spec.channels, this->spec.freq);
+    cvt.len = length;
+    cvt.buf = buffer;
+    SDL_ConvertAudio(&cvt);
+    uint8_t* newbuffer = (uint8_t*)malloc(sizeof(uint8_t)*cvt.len_cvt);
+    memcpy(newbuffer, buffer, sizeof(uint8_t)*cvt.len);
+    this->sounds.add({newbuffer, (size_t)cvt.len, 0});
+    SDL_FreeWAV(buffer);
+    SDL_UnlockAudioDevice(this->device);
+}
+void Speaker::pauseAudio(bool pause) {
+    SDL_PauseAudioDevice(this->device, pause);
+}
+void Speaker::audioCallback(void* userdata, uint8_t* stream, int size) {
+    memset(stream, 0, size);
+    if(!userdata) {
+        return;
+    }
+    Speaker* speaker = (Speaker*)userdata;
+    for(unsigned int i=0; i<speaker->sounds.size(); i++) {
+        if(!speaker->sounds.getArray()[i].free) {
+            if(!speaker->sounds[i].buffer || speaker->sounds[i].position>=speaker->sounds[i].length) {
+                speaker->sounds.remove(i);
+                continue;
+            }
+            size = (unsigned int)size>speaker->sounds[i].length ? speaker->sounds[i].length : size;
+            SDL_MixAudioFormat(stream, speaker->sounds[i].buffer+speaker->sounds[i].position, speaker->spec.format, size, SDL_MIX_MAXVOLUME);
+            speaker->sounds.getArray()[i].elem.position += size;
         }
     }
+}
+
+Thing::Thing(Shape* shape, float health, GLuint textureid) : Object(shape) {
+    this->family.pushBack("Thing");
+    this->health = health;
+    this->textureid = textureid;
+}
+Thing::~Thing() {
 }
 void Thing::update(double delta) {
     Object::update(delta);
-    if(this->deathcounter >= deathtime) {
-        this->~Thing();
-        return;
-    }
-    if(this->health <= 0) {
-        this->deathcounter += delta;
-    }
-    if(this->delay > 0) {
-        this->delay -= delta;
-    }
-    if(this->updatef) {
-        this->updatef(this, delta);
-    }
 }
 void Thing::render(Renderer* renderer) {
     Object::render(renderer);
-    if(this->renderf) {
-        this->renderf(this, renderer);
-    }
+    if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
+    glBindTexture(GL_TEXTURE_2D, this->textureid);
+    glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBegin(GL_TRIANGLES);
+                V2f pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y-(float)1/2});
+                glTexCoord2f(0, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
+                glTexCoord2f(1, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
+                glTexCoord2f(0, 0);
+                glVertex3f(pos.x, pos.y, 0);
+
+                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y+(float)1/2});
+                glTexCoord2f(1, 0);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
+                glTexCoord2f(1, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
+                glTexCoord2f(0, 0);
+                glVertex3f(pos.x, pos.y, 0);
+            glEnd();
+        glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
 }
-void Thing::hit() {
+void Thing::speak(Speaker* speaker) {
+    Object::speak(speaker);
 }
-void Thing::put() {
+void Thing::use() {
 }
-void Thing::pick() {
-    if(this->world) {
-        for(unsigned int i=0; i<this->world->objs.size(); i++) {
-            Object* obj = this->world->objs[i];
-            if(((Thing*)obj)->health <= 0) {
-                if(obj->pos == this->getPos()) { //TODO: Proper collision detection
-                    this->bag.add((Thing*)obj);
-                    this->world->objs.remove(obj->id);
-                    return;
-                }
+void Thing::attack() {
+}
+
+bool checkCollision(manifold* manifold, Object* a, Object* b) {
+    if(a && b && a->shape && b->shape) {
+        V2f angle;
+        angle.y = (float)fatp(a->getPos(), b->getPos());
+        V2f ra = a->shape->getRadius(angle);
+        V2f rb = b->shape->getRadius(angle+(V2f){0, M_PI});
+
+        /*V2f pos1 = {(float)fmax(a->shape->getPos().x, b->shape->getPos().x), (float)fmax(a->shape->getPos().y, b->shape->getPos().y)};
+        V2f pos2 = {(float)fmin(a->shape->getPos().x, b->shape->getPos().x), (float)fmin(a->shape->getPos().y, b->shape->getPos().y)};
+        float penetration = ra.x+rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));*/
+
+        V2f starta;
+        V2f enda;
+        V2f tempstartb;
+        V2f tempendb;
+        V2f startb;
+        V2f endb;
+        starta.x = 0;
+        starta.y = 0;
+        enda.x = ra.x;
+        enda.y = 0;
+        tempstartb.x = cos(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)-sin(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
+        tempstartb.y = sin(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)+cos(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
+        tempendb.x = cos(rb.y-ra.y)*rb.x+tempstartb.x;
+        tempendb.y = sin(rb.y-ra.y)*rb.x+tempstartb.y;
+        startb.x = fmin(tempstartb.x, tempendb.x);
+        startb.y = fmin(tempstartb.y, tempendb.y);
+        endb.x = fmax(tempstartb.x, tempendb.x);
+        endb.y = fmax(tempstartb.y, tempendb.y);
+        float penetration=0;
+        if(startb.x <= enda.x && endb.x >= starta.x && startb.y <= starta.y && endb.y >= starta.y) {
+            penetration = 1;
+        }
+        float restitution = fmin(a->shape->mat.restitution, b->shape->mat.restitution);
+        V2f na = a->shape->getNormal(ra);
+        V2f nb = b->shape->getNormal(rb);
+        float ma = a->shape->getInvMass();
+        float mb = b->shape->getInvMass();
+        if(isinf(ma)) {
+            ma = 1;
+        }
+        if(isinf(mb)) {
+            mb = 1;
+        }
+        float pa = a->getVel().x/ma;
+        float pb = b->getVel().x/mb;
+        V2f fa = {(pa+pb)*(float)cos((a->getVel()-nb).y)*-(1+restitution)/2+penetration, nb.y};
+        V2f fb = {(pa+pb)*(float)cos((b->getVel()-na).y)*-(1+restitution)/2+penetration, na.y};
+        if(manifold) {
+            memset(manifold, 0, sizeof(struct manifold));
+            manifold->a = a;
+            manifold->b = b;
+            manifold->ra = ra;
+            manifold->rb = rb;
+            manifold->angle = angle;
+            manifold->starta = starta;
+            manifold->enda = enda;
+            manifold->tempstartb = tempstartb;
+            manifold->tempendb = tempendb;
+            manifold->startb = startb;
+            manifold->endb = endb;
+            if(penetration) {
+                manifold->penetration = penetration;
+                manifold->restitution = restitution;
+                manifold->na = na;
+                manifold->nb = nb;
+                manifold->ma = ma;
+                manifold->mb = mb;
+                manifold->pa = pa;
+                manifold->pb = pb;
+                manifold->fa = fa;
+                manifold->fb = fb;
             }
         }
+        if(penetration > 0) {
+            a->collisionCallback(manifold);
+            b->collisionCallback(manifold);
+            return 1;
+        }
     }
+    return 0;
 }
-void Thing::drop() {
-    if(bagcurr < this->bag.size()) {
-        this->bag[bagcurr]->pos = this->getPos();
-        this->bag[bagcurr]->ori = this->getOri();
-        this->bag[bagcurr]->vel = this->getVel();
-        this->world->add(this->bag[bagcurr]);
-        this->bag.remove(bagcurr);
-    }
-}
-Thing& Thing::operator=(const Thing& rvalue) {
-    Object::operator=(rvalue); //Call base class = operator
-    this->type = rvalue.type;
-    this->bag = rvalue.bag;
-    this->bagcurr = rvalue.bagcurr;
-    this->deathcounter = rvalue.deathcounter;
-    this->deathtime = rvalue.deathtime;
-    this->delay = rvalue.delay;
-    this->health = rvalue.health;
-    this->attack = rvalue.attack;
-    this->updatef = rvalue.updatef;
-    this->renderf = rvalue.renderf;
-    return *this;
-}
-void Thing::defaultRenderf(Thing* thing, Renderer* renderer) {
-    if(!(2 < renderer->family.size() && !strcmp(renderer->family[2], "ClassicRenderer"))) return;
-    switch(thing->type) {
-        case Tree:
-            ((ClassicRenderer*)renderer)->draw('Y', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Log:
-            ((ClassicRenderer*)renderer)->draw('=', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Stick:
-            ((ClassicRenderer*)renderer)->draw('/', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Flower:
-            ((ClassicRenderer*)renderer)->draw('*', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Grass:
-            ((ClassicRenderer*)renderer)->draw('"', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Wheat:
-            ((ClassicRenderer*)renderer)->draw('w', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Seeds:
-            ((ClassicRenderer*)renderer)->draw('.', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Flint:
-            ((ClassicRenderer*)renderer)->draw('^', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Stone:
-            ((ClassicRenderer*)renderer)->draw('n', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Water:
-            ((ClassicRenderer*)renderer)->draw('~', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Human:
-            ((ClassicRenderer*)renderer)->draw('@', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Pig: //TODO
-            ((ClassicRenderer*)renderer)->draw('m', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Cow: //TODO
-            ((ClassicRenderer*)renderer)->draw('M', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Hamster: //TODO
-            ((ClassicRenderer*)renderer)->draw('o', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case Bread:
-            ((ClassicRenderer*)renderer)->draw('B', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case RawMeat:
-            ((ClassicRenderer*)renderer)->draw('O', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        case CookedMeat:
-            ((ClassicRenderer*)renderer)->draw('0', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
-        default:
-            ((ClassicRenderer*)renderer)->draw('#', {thing->getPos().x, thing->getPos().y, (float)!thing->generation.generate});
-            break;
+void resolveCollision(manifold manifold) {
+    if(manifold.a && manifold.b && manifold.a->shape && manifold.b->shape) {
+        manifold.a->applyImpulse(manifold.fa);
+        manifold.b->applyImpulse(manifold.fb);
     }
 }

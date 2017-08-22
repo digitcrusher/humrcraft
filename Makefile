@@ -1,5 +1,5 @@
 # Makefile
-# textcraft Source Code
+# humrcraft Source Code
 # Available on Github
 #
 # Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -21,22 +21,22 @@ BD=./build
 CC=gcc
 CCFLAGS=-Wall -Wextra -Wpedantic -ggdb -O0
 CXX=g++
-CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. -I./karolslib/src
+CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I.
 LD=$(CXX)
 #For linux:
 LDFLAGS=
-LDLIBS=-L./karolslib/build -lkarolslib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf
+LDLIBS=-L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 #For windows:
 #LDFLAGS=-pthread -mwindows -lgdi32
-#LDLIBS=-L./karolslib/build -lkarolslib
+#LDLIBS=
 
-all: clean textcraft
+all: clean humrcraft
 
-textcraft: brainfuck.o graphics.o gui.o language.o main.o nbp.o network.o procedural.o renderers.o shapes.o world.o
-	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/nbp.o $(BD)/network.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o $(LDLIBS) -o $(BD)/textcraft
+humrcraft: brainfuck.o graphics.o gui.o language.o main.o math.o module.o nbp.o procedural.o renderers.o shapes.o utils.o world.o
+	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
 
 brainfuck.o:
-	$(CXX) $(CXXFLAGS) $(SD)/brainfuck.cpp -c -o $(BD)/brainfuck.o
+	$(CC) $(CCFLAGS) $(SD)/brainfuck.c -c -o $(BD)/brainfuck.o
 
 graphics.o:
 	$(CXX) $(CXXFLAGS) $(SD)/graphics.cpp -c -o $(BD)/graphics.o
@@ -50,11 +50,14 @@ language.o:
 main.o:
 	$(CXX) $(CXXFLAGS) $(SD)/main.cpp -c -o $(BD)/main.o
 
+math.o:
+	$(CXX) $(CXXFLAGS) $(SD)/math.cpp -c -o $(BD)/math.o
+
+module.o:
+	$(CC) $(CCFLAGS) $(SD)/module.c -c -o $(BD)/module.o
+
 nbp.o:
 	$(CC) $(CCFLAGS) $(SD)/nbp.c -c -o $(BD)/nbp.o
-
-network.o:
-	$(CXX) $(CXXFLAGS) $(SD)/network.cpp -c -o $(BD)/network.o
 
 procedural.o:
 	$(CXX) $(CXXFLAGS) $(SD)/procedural.cpp -c -o $(BD)/procedural.o
@@ -65,8 +68,11 @@ renderers.o:
 shapes.o:
 	$(CXX) $(CXXFLAGS) $(SD)/shapes.cpp -c -o $(BD)/shapes.o
 
+utils.o:
+	$(CXX) $(CXXFLAGS) $(SD)/utils.cpp -c -o $(BD)/utils.o
+
 world.o:
 	$(CXX) $(CXXFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/textcraft $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/nbp.o $(BD)/network.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/world.o
+	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o

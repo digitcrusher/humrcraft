@@ -1,6 +1,6 @@
 /*
  * brainfuck.h
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -21,7 +21,7 @@
 #ifndef BRAINFUCK_H
 #define BRAINFUCK_H
 
-void execute(const char* code);
-void executeFile(const char* filename);
+void BF_execute(const char* code);
+void BF_executeFile(const char* filename);
 
 #endif

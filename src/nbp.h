@@ -1,6 +1,6 @@
 /*
  * nbp.h Node Based Pathfinding
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -33,19 +33,17 @@ struct NBP_node {
     struct NBP_node** connections;
     size_t size;
 };
-typedef struct NBP_node NBP_node;
 struct NBP_path {
-    NBP_node** nodes;
+    struct NBP_node** nodes;
     size_t length;
 };
-typedef struct NBP_path NBP_path;
 
-NBP_node* NBP_createNode(int x, int y);
-void NBP_destroyNode(NBP_node* node);
-void NBP_destroyPath(NBP_path* path);
-bool NBP_connect(NBP_node* node, NBP_node* node1);
-NBP_path* NBP_AStarPathFind(NBP_node* start, NBP_node* goal);
-NBP_path* NBP_TreePathFind(NBP_node* start, NBP_node* goal);
+struct NBP_node* NBP_createNode(int x, int y);
+void NBP_destroyNode(struct NBP_node* node);
+void NBP_destroyPath(struct NBP_path* path);
+bool NBP_connect(struct NBP_node* node, struct NBP_node* node1);
+struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal);
+struct NBP_path* NBP_TreePathFind(struct NBP_node* start, struct NBP_node* goal);
 
 #ifdef __cplusplus
 }

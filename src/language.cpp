@@ -1,6 +1,6 @@
 /*
  * language.cpp C-like Interpreted Programming Language
- * textcraft Source Code
+ * humrcraft Source Code
  * Available on Github
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
@@ -19,8 +19,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <iostream>
-#include <utils/utils.h>
-#include "language.h"
+#include <stdlib.h>
+#include <string.h>
+#include "utils.hpp"
+#include "language.hpp"
 
 type_t returntype = {"", "", sizeof(Variable*), 3};
 type_t anytype = {"", "", 0, 2};
@@ -786,8 +788,8 @@ void Variable::clearCache() {
     this->cache = NULL;
 }
 
-Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, bool suffix
-                  ,Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable(voidtype, id) {
+Operator::Operator(const char* id, int priority, type_t lvalue, type_t rvalue, bool uselvalue, bool uservalue, bool suffix,
+                  Variable* (*evalf)(Variable* lvalue, Variable* rvalue)) : Variable(voidtype, id) {
     this->suffix = suffix;
     this->priority = priority;
     this->lvalue = lvalue;
