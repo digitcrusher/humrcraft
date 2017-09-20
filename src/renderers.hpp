@@ -27,6 +27,9 @@
 #include "math.h"
 #include "world.hpp"
 
+class SDLRenderer;
+class SDLGLRenderer;
+
 class SDLRenderer : public Renderer {
     public:
         SDL_Window* window;
@@ -37,8 +40,8 @@ class SDLRenderer : public Renderer {
         virtual void begin();
         virtual void end();
         virtual bool getEvent(SDL_Event* event);
-        virtual V2i mapPos(V2f pos);
-        virtual V2f getPos(V2i pos);
+        virtual V2i SDLMapPos(V2f pos);
+        virtual V2f SDLGetPos(V2i pos);
         virtual int mapRGB(uint8_t r, uint8_t g, uint8_t b);
         virtual void getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b);
         virtual int mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -63,10 +66,10 @@ class SDLGLRenderer : public Renderer {
         virtual void begin();
         virtual void end();
         virtual bool getEvent(SDL_Event* event);
-        virtual V2f glMapPos(V2f pos);
-        virtual V2f glGetPos(V2f pos);
-        virtual V2i mapPos(V2f pos);
-        virtual V2f getPos(V2i pos);
+        virtual V2f GLMapPos(V2f pos, V2f rot); //TODO: improve this and the one below
+        virtual V2f GLGetPos(V2f pos, V2f rot);
+        virtual V2i SDLMapPos(V2f pos);
+        virtual V2f SDLGetPos(V2i pos);
 };
 
 #endif

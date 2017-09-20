@@ -21,6 +21,7 @@
 #include <iostream>
 #include "renderers.hpp"
 #include "world.hpp"
+#include "shapes.hpp"
 
 Object::Object(Shape* shape) {
     this->id = 0;
@@ -36,19 +37,22 @@ Object::Object(Shape* shape) {
     this->vel = {0, 0};
     this->rot = {0, 0};
     this->stationary = 0;
+    this->shared = 0;
 }
-Object::Object(Shape* shape, bool stationary) : Object(shape) {
+Object::Object(Shape* shape, bool shared, bool stationary) : Object(shape) {
     this->stationary = stationary;
+    this->shared = shared;
 }
 Object::~Object() {
     if(this->world) {
         this->world->remove(this->id);
     }
-    if(this->shape) {
+    if(this->shape && !this->shape->shared) {
         delete this->shape;
     }
 }
 void Object::update(double delta) {
+    this->time += delta;
     if(this->shape) {
         this->shape->update(delta);
     }
@@ -60,7 +64,6 @@ void Object::update(double delta) {
 //    if(this->world) {
 //        this->vspd *= 1-this->world->friction*this->getInvMass()*delta;
 //    }
-    this->time += delta;
 }
 void Object::render(Renderer* renderer) {
     if(this->shape) {
@@ -126,6 +129,7 @@ Object& Object::operator=(const Object& rvalue) {
 
 World::World() : Object(NULL){
     this->family.pushBack("World");
+    this->collisions.pushBack(circleCircle);
 }
 World::~World() {
 }
@@ -145,7 +149,7 @@ void World::update(double delta) {
                         Object* b = this->objs[j];
                         if(b->shape) {
                             manifold manifold;
-                            checkCollision(&manifold, a, b);
+                            checkCollision(&manifold, a, b, this);
                             resolveCollision(manifold);
                         }
                     }
@@ -187,6 +191,9 @@ int World::add(Object* obj) {
     obj->world = this;
     return (obj->id = this->objs.add(obj));
 }
+void World::addCollision(bool (*collision)(manifold* manifold, World* world)) {
+    this->collisions.pushBack(collision);
+}
 bool World::remove(unsigned int id) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
         if(this->objs[i]->id == id && !this->objs.isFree(i)) {
@@ -198,7 +205,7 @@ bool World::remove(unsigned int id) {
 }
 bool World::destroy(unsigned int id) {
     for(unsigned int i=0; i<this->objs.size(); i++) {
-        if(this->objs[i]->id == id && !this->objs.isFree(i)) {
+        if(this->objs[i]->id == id && !this->objs.isFree(i) && !this->objs[i]->shared) {
             delete this->objs[i];
             this->objs.getArray()[i].free = 1;
             return 0;
@@ -208,7 +215,7 @@ bool World::destroy(unsigned int id) {
 }
 void World::destroyAll() {
     for(unsigned int i=0; i<this->objs.size(); i++) {
-        if(!this->objs.isFree(i)) {
+        if(!this->objs.isFree(i) && !this->objs[i]->shared) {
             delete this->objs[i];
             this->objs.getArray()[i].free = 1;
         }
@@ -242,7 +249,6 @@ World& World::operator=(const World& rvalue) {
     Object::operator=(rvalue); //Call base class = operator
     this->time = rvalue.time;
     this->objs = rvalue.objs;
-    this->thingtypes = rvalue.thingtypes;
     return *this;
 }
 
@@ -400,116 +406,86 @@ void Speaker::audioCallback(void* userdata, uint8_t* stream, int size) {
     }
 }
 
-Thing::Thing(Shape* shape, float health, GLuint textureid) : Object(shape) {
-    this->family.pushBack("Thing");
-    this->health = health;
-    this->textureid = textureid;
-}
-Thing::~Thing() {
-}
-void Thing::update(double delta) {
-    Object::update(delta);
-}
-void Thing::render(Renderer* renderer) {
-    Object::render(renderer);
-    if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
-    glBindTexture(GL_TEXTURE_2D, this->textureid);
-    glEnable(GL_TEXTURE_2D);
-        glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glBegin(GL_TRIANGLES);
-                V2f pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y-(float)1/2});
-                glTexCoord2f(0, 1);
-                glVertex3f(pos.x, pos.y, 1);
-                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
-                glTexCoord2f(1, 1);
-                glVertex3f(pos.x, pos.y, 1);
-                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
-                glTexCoord2f(0, 0);
-                glVertex3f(pos.x, pos.y, 0);
-
-                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y+(float)1/2});
-                glTexCoord2f(1, 0);
-                glVertex3f(pos.x, pos.y, 1);
-                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
-                glTexCoord2f(1, 1);
-                glVertex3f(pos.x, pos.y, 1);
-                pos = ((SDLGLRenderer*)renderer)->glMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
-                glTexCoord2f(0, 0);
-                glVertex3f(pos.x, pos.y, 0);
-            glEnd();
-        glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
-}
-void Thing::speak(Speaker* speaker) {
-    Object::speak(speaker);
-}
-void Thing::use() {
-}
-void Thing::attack() {
-}
-
-bool checkCollision(manifold* manifold, Object* a, Object* b) {
+bool checkCollision(manifold* manifold, Object* a, Object* b, World* world) {
     if(a && b && a->shape && b->shape) {
+        memset(manifold, 0, sizeof(struct manifold));
         V2f angle;
-        angle.y = (float)fatp(a->getPos(), b->getPos());
-        V2f ra = a->shape->getRadius(angle);
-        V2f rb = b->shape->getRadius(angle+(V2f){0, M_PI});
-
-        /*V2f pos1 = {(float)fmax(a->shape->getPos().x, b->shape->getPos().x), (float)fmax(a->shape->getPos().y, b->shape->getPos().y)};
-        V2f pos2 = {(float)fmin(a->shape->getPos().x, b->shape->getPos().x), (float)fmin(a->shape->getPos().y, b->shape->getPos().y)};
-        float penetration = ra.x+rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));*/
-
-        V2f starta;
-        V2f enda;
-        V2f tempstartb;
-        V2f tempendb;
-        V2f startb;
-        V2f endb;
-        starta.x = 0;
-        starta.y = 0;
-        enda.x = ra.x;
-        enda.y = 0;
-        tempstartb.x = cos(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)-sin(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
-        tempstartb.y = sin(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)+cos(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
-        tempendb.x = cos(rb.y-ra.y)*rb.x+tempstartb.x;
-        tempendb.y = sin(rb.y-ra.y)*rb.x+tempstartb.y;
-        startb.x = fmin(tempstartb.x, tempendb.x);
-        startb.y = fmin(tempstartb.y, tempendb.y);
-        endb.x = fmax(tempstartb.x, tempendb.x);
-        endb.y = fmax(tempstartb.y, tempendb.y);
+        V2f ra;
+        V2f rb;
+        float restitution;
+        V2f na;
+        V2f nb;
+        float ma;
+        float mb;
+        float pa;
+        float pb;
+        V2f fa;
+        V2f fb;
+        manifold->a = a;
+        manifold->b = b;
+        angle = fatp(a->getPos(), b->getPos());
+        ra = a->shape->getRadius(angle);
+        rb = b->shape->getRadius(angle+(V2f){0, M_PI});
+        manifold->ra = ra;
+        manifold->rb = rb;
         float penetration=0;
-        if(startb.x <= enda.x && endb.x >= starta.x && startb.y <= starta.y && endb.y >= starta.y) {
-            penetration = 1;
+        unsigned int i;
+        for(i=0; i<world->collisions.size(); i++) {
+            if(!world->collisions[i] || world->collisions[i](manifold, world)) {
+                continue;
+            }
+            break;
         }
-        float restitution = fmin(a->shape->mat.restitution, b->shape->mat.restitution);
-        V2f na = a->shape->getNormal(ra);
-        V2f nb = b->shape->getNormal(rb);
-        float ma = a->shape->getInvMass();
-        float mb = b->shape->getInvMass();
-        if(isinf(ma)) {
-            ma = 1;
-        }
-        if(isinf(mb)) {
-            mb = 1;
-        }
-        float pa = a->getVel().x/ma;
-        float pb = b->getVel().x/mb;
-        V2f fa = {(pa+pb)*(float)cos((a->getVel()-nb).y)*-(1+restitution)/2+penetration, nb.y};
-        V2f fb = {(pa+pb)*(float)cos((b->getVel()-na).y)*-(1+restitution)/2+penetration, na.y};
-        if(manifold) {
-            memset(manifold, 0, sizeof(struct manifold));
-            manifold->a = a;
-            manifold->b = b;
+        if(i==world->collisions.size()) {
+            V2f starta;
+            V2f enda;
+            V2f tempstartb;
+            V2f tempendb;
+            V2f startb;
+            V2f endb;
+            starta.x = 0;
+            starta.y = 0;
+            enda.x = ra.x;
+            enda.y = 0;
+            tempstartb.x = cos(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)-sin(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
+            tempstartb.y = sin(-(ra.y))*(b->shape->getPos().x-a->shape->getPos().x)+cos(-(ra.y))*(b->shape->getPos().y-a->shape->getPos().y);
+            tempendb.x = cos(rb.y-ra.y)*rb.x+tempstartb.x;
+            tempendb.y = sin(rb.y-ra.y)*rb.x+tempstartb.y;
+            startb.x = fmin(tempstartb.x, tempendb.x);
+            startb.y = fmin(tempstartb.y, tempendb.y);
+            endb.x = fmax(tempstartb.x, tempendb.x);
+            endb.y = fmax(tempstartb.y, tempendb.y);
+            if(startb.x <= enda.x && endb.x >= starta.x && startb.y <= starta.y && endb.y >= starta.y) {
+                penetration = 1;
+            }
             manifold->ra = ra;
             manifold->rb = rb;
-            manifold->angle = angle;
             manifold->starta = starta;
             manifold->enda = enda;
             manifold->tempstartb = tempstartb;
             manifold->tempendb = tempendb;
             manifold->startb = startb;
             manifold->endb = endb;
+        }else {
+            penetration = manifold->penetration;
+        }
+        restitution = fmin(a->shape->mat.restitution, b->shape->mat.restitution);
+        na = a->shape->getNormal(ra);
+        nb = b->shape->getNormal(rb);
+        ma = a->shape->getInvMass();
+        mb = b->shape->getInvMass();
+        if(isinf(ma)) {
+            ma = 1;
+        }
+        if(isinf(mb)) {
+            mb = 1;
+        }
+        pa = a->getVel().x/ma;
+        pb = b->getVel().x/mb;
+        fa = {(pa+pb)*(float)cos((a->getVel()-nb).y)*-(1+restitution)/2+penetration, nb.y};
+        fb = {(pa+pb)*(float)cos((b->getVel()-na).y)*-(1+restitution)/2+penetration, na.y};
+        if(manifold) {
+            manifold->angle = angle;
             if(penetration) {
                 manifold->penetration = penetration;
                 manifold->restitution = restitution;
@@ -533,7 +509,9 @@ bool checkCollision(manifold* manifold, Object* a, Object* b) {
 }
 void resolveCollision(manifold manifold) {
     if(manifold.a && manifold.b && manifold.a->shape && manifold.b->shape) {
-        manifold.a->applyImpulse(manifold.fa);
-        manifold.b->applyImpulse(manifold.fb);
+        if(manifold.penetration > 0) {
+            manifold.a->applyImpulse(manifold.fa);
+            manifold.b->applyImpulse(manifold.fb);
+        }
     }
 }

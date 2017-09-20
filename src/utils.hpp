@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+//TODO: add a sorting algorithm
+
 #if defined(__linux__)
 long getMS();
 long getNS();
@@ -47,6 +49,8 @@ int htoi(const char* hex); //Convert hex string to int
 //char* itos(int input, char* msg); //Convert int to string and concatenate msg to the end !!!!!NOT USED!!!!!
 char* encode(const char* str, unsigned int size, int pass);
 char* decode(const char* str, unsigned int size, int pass);
+
+#include <iostream>
 
 template<typename T> class Vector {
     private:
@@ -100,7 +104,7 @@ template<typename T> bool Vector<T>::resize(size_t newsize) {
     if(newsize > this->maxsize)
         return 1;
     this->vcapacity = newsize;
-    this->array = (T*)realloc((void*)this->array, sizeof(T)*this->vcapacity);
+    this->array = (T*)realloc(this->array, sizeof(T)*this->vcapacity);
     return 0;
 }
 template<typename T> T* Vector<T>::getP(unsigned int element) {

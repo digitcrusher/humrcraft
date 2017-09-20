@@ -71,8 +71,8 @@ void Square::render(Renderer* renderer) {
     Shape::render(renderer);
     if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
     ((SDLRenderer*)renderer)->drawSquare(this->getPos(), this->getOri(), this->sidelen, ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y}).x,
-                    this->getPos().y+(float)sin(this->getOri().y)*this->getRadius({-this->getOri().x, -this->getOri().y}).x},
+    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
+                    this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
                     ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
 }
 float Square::getVolume() {
@@ -83,4 +83,22 @@ V2f Square::getRadius(V2f angle) {
 }
 V2f Square::getNormal(V2f angle) {
     return {0, angle.y};
+}
+
+bool circleCircle(manifold* manifold, World* world) {
+    if(!manifold->a->shape->checkFamily(manifold->a->shape, "Circle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Circle", 2)) {
+        return 1;
+    }
+    manifold->ra = manifold->a->shape->getRadius(manifold->angle);
+    manifold->rb = manifold->b->shape->getRadius(manifold->angle+(V2f){0, M_PI});
+    V2f pos1 = {(float)fmax(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmax(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
+    V2f pos2 = {(float)fmin(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmin(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
+    manifold->penetration = manifold->ra.x+manifold->rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
+    return 0;
+}
+bool rectangleRectangle(manifold* manifold, World* world) {
+    if(!manifold->a->shape->checkFamily(manifold->a->shape, "Rectangle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Rectangle", 2)) {
+        return 1;
+    }
+    return 0;
 }

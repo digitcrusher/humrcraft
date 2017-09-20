@@ -18,25 +18,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 SD=./src
 BD=./build
-CC=gcc
+CC=i686-w64-mingw32-gcc
 CCFLAGS=-Wall -Wextra -Wpedantic -ggdb -O0
-CXX=g++
-CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I.
+CXX=i686-w64-mingw32-g++
+CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. -I./mingw32/SDL2/i686-w64-mingw32/include
 LD=$(CXX)
 #For linux:
-LDFLAGS=
-LDLIBS=-L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
+#LDFLAGS=-m32
+#LDLIBS=-L/usr/lib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 #For windows:
-#LDFLAGS=-pthread -mwindows -lgdi32
-#LDLIBS=
+LDFLAGS=-m32 -mwindows
+LDLIBS=-L./mingw32/SDL2/i686-w64-mingw32/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 -lglu32
 
 all: clean humrcraft
 
-humrcraft: brainfuck.o graphics.o gui.o language.o main.o math.o module.o nbp.o procedural.o renderers.o shapes.o utils.o world.o
-	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
+humrcraft: brainfuck.o game.o graphics.o gui.o language.o main.o math.o maze.o module.o nbp.o procedural.o renderers.o shapes.o utils.o world.o
+	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
 
 brainfuck.o:
 	$(CC) $(CCFLAGS) $(SD)/brainfuck.c -c -o $(BD)/brainfuck.o
+
+game.o:
+	$(CXX) $(CXXFLAGS) $(SD)/game.cpp -c -o $(BD)/game.o
 
 graphics.o:
 	$(CXX) $(CXXFLAGS) $(SD)/graphics.cpp -c -o $(BD)/graphics.o
@@ -52,6 +55,9 @@ main.o:
 
 math.o:
 	$(CXX) $(CXXFLAGS) $(SD)/math.cpp -c -o $(BD)/math.o
+
+maze.o:
+	$(CC) $(CCFLAGS) $(SD)/maze.c -c -o $(BD)/maze.o
 
 module.o:
 	$(CC) $(CCFLAGS) $(SD)/module.c -c -o $(BD)/module.o
@@ -75,4 +81,4 @@ world.o:
 	$(CXX) $(CXXFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o
+	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o

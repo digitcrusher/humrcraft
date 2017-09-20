@@ -1,5 +1,5 @@
 /*
- * MOD_module.c
+ * module.c
  * humrcraft Source Code
  * Available on Github
  *

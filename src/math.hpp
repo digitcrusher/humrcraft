@@ -44,13 +44,18 @@ struct V3f {
 struct V3d {
     double x,y,z;
 };
-typedef V2f V;
 struct line {
-    float x1,y1,x2,y2;
+    V2f pos1, pos2;
 };
 struct square {
-    float x1,y1,x2,y2;
+    V2f pos1, pos2;
 };
+V2i operator-(const V2i& rvalue);
+V2f operator-(const V2f& rvalue);
+V2d operator-(const V2d& rvalue);
+V3i operator-(const V3i& rvalue);
+V3f operator-(const V3f& rvalue);
+V3d operator-(const V3d& rvalue);
 V2i operator+(const V2i& lvalue, const V2i& rvalue);
 V2f operator+(const V2f& lvalue, const V2f& rvalue);
 V2d operator+(const V2d& lvalue, const V2d& rvalue);
@@ -63,6 +68,18 @@ V2d operator-(const V2d& lvalue, const V2d& rvalue);
 V3i operator-(const V3i& lvalue, const V3i& rvalue);
 V3f operator-(const V3f& lvalue, const V3f& rvalue);
 V3d operator-(const V3d& lvalue, const V3d& rvalue);
+V2i operator*(const V2i& lvalue, const V2i& rvalue);
+V2f operator*(const V2f& lvalue, const V2f& rvalue);
+V2d operator*(const V2d& lvalue, const V2d& rvalue);
+V3i operator*(const V3i& lvalue, const V3i& rvalue);
+V3f operator*(const V3f& lvalue, const V3f& rvalue);
+V3d operator*(const V3d& lvalue, const V3d& rvalue);
+V2i operator/(const V2i& lvalue, const V2i& rvalue);
+V2f operator/(const V2f& lvalue, const V2f& rvalue);
+V2d operator/(const V2d& lvalue, const V2d& rvalue);
+V3i operator/(const V3i& lvalue, const V3i& rvalue);
+V3f operator/(const V3f& lvalue, const V3f& rvalue);
+V3d operator/(const V3d& lvalue, const V3d& rvalue);
 bool operator==(const V2i& lvalue, const V2i& rvalue);
 bool operator==(const V2f& lvalue, const V2f& rvalue);
 bool operator==(const V2d& lvalue, const V2d& rvalue);
@@ -70,14 +87,14 @@ bool operator==(const V3i& lvalue, const V3i& rvalue);
 bool operator==(const V3f& lvalue, const V3f& rvalue);
 bool operator==(const V3d& lvalue, const V3d& rvalue);
 
-float triangle(float i);
+float trianglewave(float i);
 float squarer(float angle, float sidelen);
 V2f carteToPolar(V2f carte);
 V2f polarToCarte(V2f polar);
 bool squareInSquare(square sqr1, square sqr2);
 bool squareInSquareCart(square sqr1, square sqr2); //square in square cartesian
-bool fpil(line line, V point); //float point in line
-bool fpilu(line line, V point, float unprec); //float point in line with unprecision
-float fatp(V p1, V p2); //float angle to point
+bool fpil(line line, V2f point); //float point in line
+bool fpilu(line line, V2f point, float unprec); //float point in line with unprecision
+V2f fatp(V2f p1, V2f p2); //float angle to point //TODO: make this faster
 
 #endif

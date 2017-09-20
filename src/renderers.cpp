@@ -71,11 +71,11 @@ void SDLRenderer::end() {
 bool SDLRenderer::getEvent(SDL_Event* event) {
     return SDL_PollEvent(event);
 }
-V2i SDLRenderer::mapPos(V2f pos) {
-    return {this->buffer->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->buffer->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
+V2i SDLRenderer::SDLMapPos(V2f pos) {
+    return {this->buffer->w/2+(int)((pos.x-this->getPos().x)*this->zoom), this->buffer->h/2-(int)((pos.y-this->getPos().y)*this->zoom)};
 }
-V2f SDLRenderer::getPos(V2i pos) {
-    return {(float)(pos.x-this->buffer->w/2)/this->zoom+Object::getPos().x, (float)(this->buffer->h/2-pos.y)/this->zoom+Object::getPos().y};
+V2f SDLRenderer::SDLGetPos(V2i pos) {
+    return {(float)(pos.x-this->buffer->w/2)/this->zoom+this->getPos().x, (float)(this->buffer->h/2-pos.y)/this->zoom+this->getPos().y};
 }
 int SDLRenderer::mapRGB(uint8_t r, uint8_t g, uint8_t b) {
     return SDL_MapRGB(this->buffer->format, r, g, b);
@@ -90,38 +90,38 @@ void SDLRenderer::getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t
     SDL_GetRGBA(color, this->buffer->format, r, g, b, a);
 }
 int SDLRenderer::getPixel(V2f pos) {
-    V2i p = this->mapPos(pos);
+    V2i p = this->SDLMapPos(pos);
     return ::getPixel(this->buffer, p.x, p.y); // use no scope (global scope)
 }
 void SDLRenderer::drawPixel(V2f pos, int color) {
-    V2i p = this->mapPos(pos);
+    V2i p = this->SDLMapPos(pos);
     ::drawPixel(this->buffer, p.x, p.y, color);
 }
 void SDLRenderer::drawCircle(V2f pos, int r, int color) {
-    V2i p = this->mapPos(pos);
+    V2i p = this->SDLMapPos(pos);
     ::drawCircle(this->buffer, p.x, p.y, r*this->zoom, color);
 }
 void SDLRenderer::drawSquare(V2f pos, V2f ori, int sidelen, int color) {
-    V2i p = this->mapPos(pos);
+    V2i p = this->SDLMapPos(pos);
     ::drawSquare(this->buffer, p.x, p.y, ori.y, sidelen*this->zoom, color);
 }
 void SDLRenderer::drawEllipse(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
+    V2i p1 = this->SDLMapPos(pos1);
+    V2i p2 = this->SDLMapPos(pos2);
     ::drawEllipse(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
 }
 void SDLRenderer::drawLine(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
+    V2i p1 = this->SDLMapPos(pos1);
+    V2i p2 = this->SDLMapPos(pos2);
     ::drawLine(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
 }
 void SDLRenderer::drawRectangle(V2f pos1, V2f pos2, int color) {
-    V2i p1 = this->mapPos(pos1);
-    V2i p2 = this->mapPos(pos2);
+    V2i p1 = this->SDLMapPos(pos1);
+    V2i p2 = this->SDLMapPos(pos2);
     ::drawRectangle(this->buffer, p1.x, p1.y, p2.x, p2.y, color);
 }
 int SDLRenderer::drawImage(V2f pos, SDL_Surface* image) {
-    V2i p = this->mapPos(pos)-(V2i){image->w/2, image->h/2};
+    V2i p = this->SDLMapPos(pos)-(V2i){image->w/2, image->h/2};
     return ::drawImage(image, p.x, p.y, this->buffer);
 }
 
@@ -190,7 +190,8 @@ void SDLGLRenderer::begin() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     glMatrixMode(GL_PROJECTION);
-    glTranslatef(-this->glMapPos(Object::getPos()).x, -this->glMapPos(Object::getPos()).y, 0);
+    glRotatef(-this->getOri().y, 0, 0, 1);
+    glTranslatef(-this->GLMapPos(Object::getPos(), -this->getOri()).x, -this->GLMapPos(Object::getPos(), -this->getOri()).y, 0);
     SDL_GetWindowSize(this->window, &this->w, &this->h);
     glViewport(0, 0, this->w, this->h);
 }
@@ -200,15 +201,19 @@ void SDLGLRenderer::end() {
 bool SDLGLRenderer::getEvent(SDL_Event* event) {
     return SDL_PollEvent(event);
 }
-V2f SDLGLRenderer::glMapPos(V2f pos) {
-    return {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
+V2f SDLGLRenderer::GLMapPos(V2f pos, V2f rot) {
+    V2f pos1 = {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
+    V2f pos2 = {(float)1/(this->h/2)*pos.x*this->zoom, (float)1/(this->w/2)*pos.y*this->zoom};
+    float s = fabs(trianglewave(rot.y-this->getOri().y));
+    float c = fabs(trianglewave(rot.y-this->getOri().y+M_PI/2));
+    return {pos1.x*c+pos2.x*s, pos1.y*c+pos2.y*s};
 }
-V2f SDLGLRenderer::glGetPos(V2f pos) {
-    return {pos.x/this->zoom/(1/(this->w/2)), pos.y/this->zoom/(1/(this->h/2))};
+V2f SDLGLRenderer::GLGetPos(V2f pos, V2f rot) {
+    return {pos.x/this->zoom/((float)1/(this->w/2)), pos.y/this->zoom/((float)1/(this->h/2))};
 }
-V2i SDLGLRenderer::mapPos(V2f pos) {
-    return {this->w/2+(int)((pos.x-Object::getPos().x)*this->zoom), this->h/2-(int)((pos.y-Object::getPos().y)*this->zoom)};
+V2i SDLGLRenderer::SDLMapPos(V2f pos) {
+    return {this->w/2+(int)((pos.x-this->getPos().x)*this->zoom), this->h/2-(int)((pos.y-this->getPos().y)*this->zoom)};
 }
-V2f SDLGLRenderer::getPos(V2i pos) {
-    return {(float)(pos.x-this->w/2)/this->zoom+Object::getPos().x, (float)(this->h/2-pos.y)/this->zoom+Object::getPos().y};
+V2f SDLGLRenderer::SDLGetPos(V2i pos) {
+    return {(float)(pos.x-this->w/2)/this->zoom+this->getPos().x, (float)(this->h/2-pos.y)/this->zoom+this->getPos().y};
 }

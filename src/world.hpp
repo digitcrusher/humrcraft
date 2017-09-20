@@ -31,7 +31,6 @@ class Object;
 class Shape;
 class Renderer;
 class Speaker;
-class Thing;
 
 struct material { //TODO: add enum with common materials
     float restitution;
@@ -48,12 +47,6 @@ struct manifold {
     V2f angle;
     V2f ra;
     V2f rb;
-    V2f starta;
-    V2f enda;
-    V2f tempstartb;
-    V2f tempendb;
-    V2f startb;
-    V2f endb;
     float penetration;
     float restitution; //restitution
     V2f na; //normal a
@@ -64,21 +57,29 @@ struct manifold {
     float pb; //momentum b
     V2f fa; //force for a
     V2f fb; //force for b
+    //default collision check
+    V2f starta;
+    V2f enda;
+    V2f tempstartb;
+    V2f tempendb;
+    V2f startb;
+    V2f endb;
 };
-class Object { //TODO: move from 2d to 3d //TODO: change to momentum instead of velocity
+class Object { //TODO: move from 2d to 3d //TODO: change to momentum instead of velocity //TODO: improve shared objects
     public:
         unsigned int id;
         Vector<const char*> family;
-        World* world;
+        World* world; //TODO: change to Object*
         Shape* shape;
         float time; //Seconds
         bool stationary;
+        bool shared;
         V2f pos; //Position meters, x-x position, y-y position
         V2f ori; //Orientation radians, y-orientation
         V2f vel; //Velocity m/s, radians, x-speed, y-direction
         V2f rot; //Rotation radians, y-rotation
         Object(Shape* shape);
-        Object(Shape* shape, bool stationary);
+        Object(Shape* shape, bool shared, bool stationary);
         virtual ~Object();
         virtual void update(double delta);
         virtual void render(Renderer* renderer);
@@ -101,13 +102,14 @@ class World : public Object {
     public:
         float time;
         List<Object*> objs;
-        List<Thing*> thingtypes;
+        Vector<bool (*)(manifold* manifold, World* world)> collisions;
         World();
         virtual ~World();
         virtual void update(double delta);
         virtual void render();
         virtual void speak();
         virtual int add(Object* obj);
+        virtual void addCollision(bool (*collision)(manifold* manifold, World* world));
         virtual bool remove(unsigned int id);
         virtual bool destroy(unsigned int id);
         virtual void destroyAll();
@@ -163,20 +165,8 @@ class Speaker : public Object { //TODO: add sound shaders
         virtual void pauseAudio(bool pause);
         static void audioCallback(void* userdata, uint8_t* stream, int size);
 };
-class Thing : public Object {
-    public:
-        float health;
-        GLuint textureid;
-        Thing(Shape* shape, float health, GLuint textureid);
-        virtual ~Thing();
-        virtual void update(double delta);
-        virtual void render(Renderer* renderer);
-        virtual void speak(Speaker* speaker);
-        virtual void use();
-        virtual void attack();
-};
 
-bool checkCollision(manifold* manifold, Object* a, Object* b);
+bool checkCollision(manifold* manifold, Object* a, Object* b, World* world);
 void resolveCollision(manifold manifold);
 
 #endif

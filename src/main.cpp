@@ -19,8 +19,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(_WIN32)
+#define SDL_MAIN_HANDLED
+#endif
 #include <stdlib.h>
 #include <iostream>
+#include <time.h>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -29,6 +34,8 @@
 #include "shapes.hpp"
 #include "renderers.hpp"
 #include "graphics.hpp"
+#include "maze.h"
+#include "game.hpp"
 
 World* world = new World();
 Thing* hero;
@@ -38,6 +45,8 @@ float gmulti = 1;
 bool pause = 1;
 bool running = 1;
 void stop(int status) {
+    world->destroyAll();
+    delete world;
     TTF_Quit();
     SDL_Quit();
     exit(status);
@@ -57,8 +66,8 @@ void update(double delta) {
                             V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
                             float force = (6.674*10/pow(10, 11))/((1/a->shape->getInvMass())*(1/b->shape->getInvMass())/
                                           pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
-                            a->applyImpulse({gmulti*force*(float)delta, fatp(a->getPos(), b->getPos())});
-                            b->applyImpulse({gmulti*force*(float)delta, fatp(b->getPos(), a->getPos())});
+                            a->applyImpulse((V2f){gmulti*force*(float)delta, 0}+fatp(a->getPos(), b->getPos()));
+                            b->applyImpulse((V2f){gmulti*force*(float)delta, 0}+fatp(b->getPos(), b->getPos()));
                         }
                     }
                 }
@@ -87,7 +96,7 @@ class Textures {
             this->textures.pushBack(id);
             SDL_FreeSurface(surface);
         }
-        GLuint& operator[](unsigned int n) {
+        virtual GLuint& operator[](unsigned int n) {
             return this->textures[n];
         }
 };
@@ -97,55 +106,124 @@ class Tiles : public Object {
         size_t sizex;
         size_t sizey;
         unsigned int* tiles;
+        /*struct world* world;
+        int x, y, heading;
+        struct lfr last;*/
         Tiles() : Object(NULL) {
-            sizex = 10;
-            sizey = 10;
+            sizex = 50;
+            sizey = 50;
             tiles = (unsigned int*)malloc(sizeof(unsigned int)*this->sizex*this->sizey);
-            for(unsigned int x=0; x<sizex; x++) {
-                for(unsigned int y=0; y<sizey; y++) {
-                    tiles[this->sizex*y+x] = 1;
+            /*world = createWorld(this->sizex, this->sizey);
+            srand(::time(NULL));
+            resetWorld(world, {Wall, 0});
+            createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, ::time(NULL));
+            x = 0;
+            y = 0;
+            heading = 0;
+            last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*/
+            for(unsigned int x=0; x<this->sizex; x++) {
+                for(unsigned int y=0; y<this->sizey; y++) {
+                    this->tiles[this->sizex*y+x] = 1;
                 }
             }
+        }
+        virtual ~Tiles() {
+            //deleteWorld(world);
+            free(this->tiles);
+        }
+        virtual void update(double delta) {
+            Object::update(delta);
         }
         virtual void render(Renderer* renderer) {
             Object::render(renderer);
             if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
+            /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
+                srand(::time(NULL));
+                resetWorld(world, {Wall, 0});
+                createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, 0);
+                x = 0;
+                y = 0;
+                heading = 0;
+                last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};
+            }
+            for(unsigned int x=0; x<this->sizex; x++) {
+                for(unsigned int y=0; y<this->sizey; y++) {
+                    switch(getTile(world, x, y)->type) {
+                        case Wall:
+                            this->tiles[this->sizex*y+x] = 1;
+                            break;
+                        case Path:
+                            this->tiles[this->sizex*y+x] = 2;
+                            break;
+                        case Exit:
+                            this->tiles[this->sizex*y+x] = 3;
+                            break;
+                        default:
+                            this->tiles[this->sizex*y+x] = 4;
+                            break;
+                    }
+                }
+            }*/
             glEnable(GL_TEXTURE_2D);
                 glEnable(GL_BLEND);
                     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                    for(unsigned int y=0; y<sizey; y++) {
-                        for(unsigned int x=0; x<sizex; x++) {
+                    V2f start = ((SDLGLRenderer*)renderer)->GLGetPos({-1, 1}, {0, 0});
+                    V2f end = ((SDLGLRenderer*)renderer)->GLGetPos({1, -1}, {0, 0});
+                    for(unsigned int y=fmax(this->sizey-start.y-(float)this->sizey/2, 0); y<fmin(this->sizey-end.y-(float)this->sizey/2, this->sizey); y++) {
+                        for(unsigned int x=fmax(start.x+(float)this->sizex/2, 0); x<fmin(end.x+(float)this->sizex/2, this->sizex); x++) {
                             glBindTexture(GL_TEXTURE_2D, textures[this->tiles[this->sizex*y+x]]);
                             glBegin(GL_TRIANGLES);
-                                V2f pos = ((SDLGLRenderer*)renderer)->glMapPos({x-(float)1/2-(float)this->sizex/2, y-(float)1/2-(float)this->sizey/2});
+                                V2f pos = ((SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(0, 1);
                                 glVertex3f(pos.x, pos.y, 1);
-                                pos = ((SDLGLRenderer*)renderer)->glMapPos({x+(float)1/2-(float)this->sizex/2, y-(float)1/2-(float)this->sizey/2});
+                                pos = ((SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(1, 1);
                                 glVertex3f(pos.x, pos.y, 1);
-                                pos = ((SDLGLRenderer*)renderer)->glMapPos({x-(float)1/2-(float)this->sizex/2, y+(float)1/2-(float)this->sizey/2});
+                                pos = ((SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(0, 0);
                                 glVertex3f(pos.x, pos.y, 0);
 
-                                pos = ((SDLGLRenderer*)renderer)->glMapPos({x+(float)1/2-(float)this->sizex/2, y+(float)1/2-(float)this->sizey/2});
+                                pos = ((SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(1, 0);
                                 glVertex3f(pos.x, pos.y, 1);
-                                pos = ((SDLGLRenderer*)renderer)->glMapPos({x+(float)1/2-(float)this->sizex/2, y-(float)1/2-(float)this->sizey/2});
+                                pos = ((SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(1, 1);
                                 glVertex3f(pos.x, pos.y, 1);
-                                pos = ((SDLGLRenderer*)renderer)->glMapPos({x-(float)1/2-(float)this->sizex/2, y+(float)1/2-(float)this->sizey/2});
+                                pos = ((SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
                                 glTexCoord2f(0, 0);
                                 glVertex3f(pos.x, pos.y, 0);
                             glEnd();
                         }
                     }
+                    /*glBindTexture(GL_TEXTURE_2D, textures[0]);
+                    glBegin(GL_TRIANGLES);
+                        V2f pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                        glTexCoord2f(0, 1);
+                        glVertex3f(pos.x, pos.y, 1);
+                        pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                        glTexCoord2f(1, 1);
+                        glVertex3f(pos.x, pos.y, 1);
+                        pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                        glTexCoord2f(0, 0);
+                        glVertex3f(pos.x, pos.y, 0);
+
+                        pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                        glTexCoord2f(1, 0);
+                        glVertex3f(pos.x, pos.y, 1);
+                        pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                        glTexCoord2f(1, 1);
+                        glVertex3f(pos.x, pos.y, 1);
+                        pos = ((SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                        glTexCoord2f(0, 0);
+                        glVertex3f(pos.x, pos.y, 0);
+                    glEnd();*/
                 glDisable(GL_BLEND);
             glDisable(GL_TEXTURE_2D);
         }
 };
 void render() {
-    world->render();
     renderer->pos = hero->getPos();
+    world->render();
 }
 int main(int argc, char** argv) {
     std::cout<<"humrcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
@@ -162,12 +240,22 @@ int main(int argc, char** argv) {
     world->add(speaker);*/
     textures.add(IMG_Load("./gfx/hero.png"));
     textures.add(IMG_Load("./gfx/bricks.png"));
+    textures.add(IMG_Load("./gfx/grass.png"));
+    textures.add(IMG_Load("./gfx/papaver_orientale.png"));
+    textures.add(IMG_Load("./gfx/orror.png"));
     world->add(new Tiles());
-    hero = new Thing(new Square(1), 1, textures[0]);
+    hero = new Thing(NULL, 0, NULL, NULL, new Square(1), 1, 0, textures[0]);
     world->add(hero);
+    /*Polygon* polygon = new Polygon();
+    std::cout<<"polygon"<<'\n';
+    polygon->addVertex({50, 5.9});
+    polygon->addVertex({25, 3.8});
+    polygon->addVertex({50, 0.3});
+    polygon->addVertex({25, 1.2});*/
     srand(rand()*time(0));
     for(int i=0; i<50; i++) {
         Object* obj = new Object(new Circle(rand()%4+1, {1, 1}));
+        //Object* obj = new Object(polygon);
         int color = rand()%128;
         obj->shape->r = 255-color;
         obj->shape->g = 127;
@@ -267,7 +355,7 @@ int main(int argc, char** argv) {
                         break;
                     case SDL_MOUSEMOTION:
                         if(!pause) {
-                            hero->ori.y = fatp(hero->pos, renderer->getPos({event.motion.x, event.motion.y}));
+                            hero->ori = fatp(hero->pos, renderer->SDLGetPos({event.motion.x, event.motion.y}));
                         }
                         break;
                 }

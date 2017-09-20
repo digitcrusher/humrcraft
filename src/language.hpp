@@ -29,7 +29,7 @@ class Expression;
 class Return;
 struct type_t { //TODO: floating point numbers and make every operator don't consider that every variable is an int
     const char* id;
-    char* opts;
+    char* opts; //TODO: fix this
     size_t size;
     int type; //0-everything else, 1-number, 2-anything, 3-return
 };
