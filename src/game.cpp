@@ -3,25 +3,30 @@
  * humrcraft Source Code
  * Available on Github
  *
- * Copyright (C) 2017 Karol "digitcrusher" Łacina
+ * Copyright (c) 2017 Karol "digitcrusher" Łacina
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 #include "game.hpp"
 #include "renderers.hpp"
 
-Thing::Thing(void* data, size_t datasize, void (*constructorf)(), void (*destructorf)(), Shape* shape, float health, float damage, GLuint textureid) : Object(shape) {
+Thing::Thing(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, float damage, GLuint textureid) : Object(shape) {
     this->family.pushBack("Thing");
     this->maxhealth = health;
     this->health = this->maxhealth;
@@ -36,8 +41,8 @@ Thing::Thing(void* data, size_t datasize, void (*constructorf)(), void (*destruc
     this->feet = NULL;
     this->data = data;
     this->datasize = datasize;
-    this->constructorf = constructorf;
-    this->destructorf = destructorf;
+    this->initf = initf;
+    this->uninitf = uninitf;
     this->updatef = NULL;
     this->renderf = NULL;
     this->speakf = NULL;
@@ -45,13 +50,13 @@ Thing::Thing(void* data, size_t datasize, void (*constructorf)(), void (*destruc
     this->attackf = NULL;
     this->actionf = NULL;
     this->collisionCallbackf = NULL;
-    if(this->constructorf) {
-        this->constructorf();
+    if(this->initf) {
+        this->initf();
     }
 }
 Thing::~Thing() {
-    if(this->destructorf) {
-        this->destructorf();
+    if(this->uninitf) {
+        this->uninitf();
     }
 }
 void Thing::update(double delta) {
@@ -130,20 +135,20 @@ void Thing::collisionCallback(manifold* manifold) {
     }
 }
 
-Gun::Gun(void* data, size_t datasize, void (*constructorf)(), void (*destructorf)(), Shape* shape, float health, GLuint textureid) :
-    Thing(data, datasize, constructorf, destructorf, shape, health, 0, textureid) {
+Gun::Gun(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, GLuint textureid) :
+    Thing(data, datasize, initf, uninitf, shape, health, 0, textureid) {
     this->family.pushBack("Gun");
 }
 Gun::~Gun() {
 }
 /*void Gun::use() {
     if(this->world && this->sample) {
-        this->world->add(new Projectile(this->sample->data, this->sample->datasize, this->sample->constructorf, this->sample->destructorf, this->sample->shape));
+        this->world->add(new Projectile(this->sample->data, this->sample->datasize, this->sample->initf, this->sample->uninitf, this->sample->shape));
     }
 }*/
 
-Projectile::Projectile(void* data, size_t datasize, void (*constructorf)(), void (*destructorf)(), Shape* shape, float health, float damage, float speed, GLuint textureid) :
-Thing(data, datasize, constructorf, destructorf, shape, health, damage, textureid) {
+Projectile::Projectile(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, float damage, float speed, GLuint textureid) :
+Thing(data, datasize, initf, uninitf, shape, health, damage, textureid) {
     this->family.pushBack("Projectile");
     this->speed = speed;
 }

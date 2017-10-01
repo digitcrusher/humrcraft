@@ -2,33 +2,38 @@
 # humrcraft Source Code
 # Available on Github
 #
-# Copyright (C) 2017 Karol "digitcrusher" Łacina
+# Copyright (c) 2017 Karol "digitcrusher" Łacina
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 SD=./src
 BD=./build
-CC=i686-w64-mingw32-gcc
+CC=gcc
 CCFLAGS=-Wall -Wextra -Wpedantic -ggdb -O0
-CXX=i686-w64-mingw32-g++
-CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. -I./mingw32/SDL2/i686-w64-mingw32/include
+CXX=g++
+CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. #-I./mingw32/SDL2/i686-w64-mingw32/include
 LD=$(CXX)
 #For linux:
-#LDFLAGS=-m32
-#LDLIBS=-L/usr/lib -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
+LDFLAGS=-m32
+LDLIBS=-L/usr/lib/i386-linux-gnu -L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 #For windows:
-LDFLAGS=-m32 -mwindows
-LDLIBS=-L./mingw32/SDL2/i686-w64-mingw32/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 -lglu32
+#LDFLAGS=-m32 -mwindows
+#LDLIBS=-L./mingw32/SDL2/i686-w64-mingw32/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 -lglu32
 
 all: clean humrcraft
 

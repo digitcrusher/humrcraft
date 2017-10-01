@@ -180,7 +180,7 @@ int main() {
     world map;
     createMap(25,13,&map,{Wall,0});
     int lvlscomplete=0;
-    
+
     play:
     resetMap({Wall,0}, &map);
     createLinearMaze({0,0},{Path,0},{Exit,0},{Path,0},3,&map);
@@ -197,7 +197,7 @@ int main() {
             _getch();
             complete=1;
         }
-        
+
         //if player is on exit restart
         if((*getTile(point.x, point.y, &map)).type == Exit) {
             complete = 1;
@@ -266,20 +266,20 @@ int main() {
         (*getTile(point.x, point.y, &map)).direction = heading;
         point.x+=x;
         point.y+=y;
-        
-        
+
+
         /*
         //check if there is an exit around
         bool exit=map[(point.x-1)+w*point.y].type == Exit ||
                   map[(point.x+1)+w*point.y].type == Exit ||
                   map[point.x+w*(point.y-1)].type == Exit ||
                   map[point.x+w*(point.y+1)].type == Exit;
-        
+
         //if player chooses to go the path with a footprint and there's a path with no footprint choose another way
         if((path || exit) && map[(point.x+x)+w*(point.y+y)].type == Footprint || map[(point.x+x)+w*(point.y+y)].type == Wall)
             goto choose;
         */
-        
+
         //render start
         for(int y=0;y<map.h;y++) {
             for(int x=0;x<map.w;x++) {
@@ -321,7 +321,7 @@ int main() {
         //render end
     }
     goto play;
-    
+
     deleteMap(&map);
     return 0;
 }

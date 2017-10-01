@@ -1,5 +1,5 @@
 # humrcraft
-A 2d game engine
+A 2D game engine
 
 Compile with make.
 
