@@ -78,11 +78,11 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
     if(!(start && goal)) {
         return NULL;
     }
-    size_t closedSetSize = 0;
+    int closedSetSize = 0;
     struct NBP_node** closedSet = (struct NBP_node**)malloc(sizeof(struct NBP_node*)*closedSetSize);
-    size_t openSetSize = 1;
+    int openSetSize = 1;
     struct openSetElement* openSet = (struct openSetElement*)malloc(sizeof(struct openSetElement)*openSetSize);
-    size_t pathsSize = 0;
+    int pathsSize = 0;
     struct pathsElement* paths = (struct pathsElement*)malloc(sizeof(struct pathsElement)*pathsSize);
     openSet[0].node = start;
     openSet[0].free = 0;
@@ -90,16 +90,16 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
     openSet[0].fScore = (abs(start->x-goal->x)+abs(start->y-goal->y))/2;
     while(openSetSize > 0) {
         struct openSetElement current = openSet[0];
-        for(unsigned int i=0; i<openSetSize; i++) {
+        for(int i=0; i<openSetSize; i++) {
             if(openSet[i].fScore < current.fScore) {
                 current = openSet[i];
             }
         }
         if(current.node == goal) {
-            size_t size=1;
+            int size=1;
             struct NBP_node* node = current.node;
             for(; node != start; size++) {
-                for(unsigned int i=0; i<pathsSize; i++) {
+                for(int i=0; i<pathsSize; i++) {
                     if(paths[i].id == node) {
                         node = paths[i].node;
                         break;
@@ -111,7 +111,7 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
             path->nodes = (struct NBP_node**)malloc(sizeof(struct NBP_node*)*path->length);
             node = current.node;
             path->nodes[size-1] = node;
-            for(unsigned int i=0; i<size; i++) {
+            for(int i=0; i<size; i++) {
                 if(paths[i].id == node) {
                     node = paths[i].node;
                     path->nodes[size-i-1] = node;
@@ -123,7 +123,7 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
             free(paths);
             return path;
         }
-        for(unsigned int i=0; i<openSetSize; i++) {
+        for(int i=0; i<openSetSize; i++) {
             if(openSet[i].node == current.node) {
                 openSet[i].free = 1;
                 break;
@@ -132,8 +132,8 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
         closedSet = (struct NBP_node**)realloc(closedSet, sizeof(struct NBP_node*)*(closedSetSize+1));
         closedSet[closedSetSize] = current.node;
         closedSetSize++;
-        for(unsigned int i=0; i<current.node->size; i++) {
-            unsigned int j, neighbor;
+        for(int i=0; i<current.node->size; i++) {
+            int j, neighbor;
             for(j=0; j<closedSetSize; j++) {
                 if(closedSet[j] == current.node->connections[i]) {
                     break;
@@ -161,7 +161,7 @@ struct NBP_path* NBP_AStarPathFind(struct NBP_node* start, struct NBP_node* goal
                     openSetSize++;
                 }
                 neighbor = j;
-                openSet[j].gScore = (unsigned int)-1>>2;
+                openSet[j].gScore = (int)-1>>2;
             }
             int tentative_gScore = current.gScore+(abs(current.node->x-openSet[neighbor].node->x)+abs(current.node->y-openSet[neighbor].node->y))/2;
             if(tentative_gScore >= openSet[neighbor].gScore) {
@@ -187,9 +187,9 @@ struct NBP_path* NBP_TreePathFind(struct NBP_node* start, struct NBP_node* goal)
         int nextCost;
         int cost;
     };
-    size_t pathsSize=1;
+    int pathsSize=1;
     struct path* paths = (struct path*)malloc(sizeof(struct path)*pathsSize);
-    size_t exploredNodesSize = 1;
+    int exploredNodesSize = 1;
     struct NBP_node** exploredNodes = (struct NBP_node**)malloc(sizeof(struct NBP_node*)*exploredNodesSize);
     exploredNodes[0] = start;
     paths[0].path = (struct NBP_path*)malloc(sizeof(struct NBP_path));
@@ -200,8 +200,8 @@ struct NBP_path* NBP_TreePathFind(struct NBP_node* start, struct NBP_node* goal)
     paths[0].nextCost = 0;
     paths[0].cost = 0;
     while(pathsSize > 0) {
-        for(unsigned int i=0; i<pathsSize-1; i++) {
-            for(unsigned int j=0; j<pathsSize-i-1; j++) {
+        for(int i=0; i<pathsSize-1; i++) {
+            for(int j=0; j<pathsSize-i-1; j++) {
                 if(paths[j].cost+paths[j].nextCost > paths[j+1].cost+paths[j+1].nextCost) {
                     struct path swap = paths[j];
                     paths[j] = paths[j+1];
@@ -213,7 +213,7 @@ struct NBP_path* NBP_TreePathFind(struct NBP_node* start, struct NBP_node* goal)
         struct NBP_node* lastNode = current->path->nodes[current->path->length-1];
         if(lastNode == goal) {
             struct NBP_path* path = current->path;
-            for(unsigned int j=0; j<pathsSize; j++) {
+            for(int j=0; j<pathsSize; j++) {
                 if(paths+j != current) {
                     NBP_destroyPath(paths[j].path);
                 }
@@ -222,10 +222,10 @@ struct NBP_path* NBP_TreePathFind(struct NBP_node* start, struct NBP_node* goal)
             return path;
         }
         bool newPath=0;
-        for(unsigned int j=0; j<lastNode->size; j++) {
+        for(int j=0; j<lastNode->size; j++) {
             struct NBP_node* nextNode = lastNode->connections[j];
             bool stop=0;
-            for(unsigned int k=0; k<exploredNodesSize; k++) {
+            for(int k=0; k<exploredNodesSize; k++) {
                 if(nextNode == exploredNodes[k]) {
                     stop = 1;
                     break;

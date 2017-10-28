@@ -27,6 +27,8 @@
 #define MAZE_H
 #include <stdbool.h>
 
+//TODO: add the "MAZE_" prefix to variables
+
 enum {
     Wall,
     Path,

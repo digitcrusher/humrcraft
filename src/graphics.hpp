@@ -27,14 +27,16 @@
 #define GRAPHICS_HPP
 #include <SDL2/SDL.h>
 
-int getPixel(SDL_Surface* surface, int x, int y);
-void drawPixel(SDL_Surface* surface, int x, int y, int color);
-void drawCircle(SDL_Surface* surface, int x, int y, int r, int color);
-void drawSquare(SDL_Surface* surface, int x, int y, float rot, int sidelen, int color);
-void drawEllipse(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
-void drawLine(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
-void drawRectangle(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
-int drawImage(SDL_Surface* from, int x, int y, SDL_Surface* to);
-void drawGraph(SDL_Surface* surface, float (*func)(float), float zoom, float x, float y, int color);
+namespace graphics {
+    int getPixel(SDL_Surface* surface, int x, int y);
+    void drawPixel(SDL_Surface* surface, int x, int y, int color);
+    void drawCircle(SDL_Surface* surface, int x, int y, int r, int color);
+    void drawSquare(SDL_Surface* surface, int x, int y, float rot, int sidelen, int color);
+    void drawEllipse(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
+    void drawLine(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
+    void drawRectangle(SDL_Surface* surface, int x1, int y1, int x2, int y2, int color);
+    int drawImage(SDL_Surface* from, int x, int y, SDL_Surface* to);
+    void drawGraph(SDL_Surface* surface, float (*func)(float), float zoom, float x, float y, int color);
+}
 
 #endif

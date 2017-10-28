@@ -22,7 +22,7 @@ int result = {
     {
         int c = a+((10-5)*(1+1))/(int b = 10); //In CIPL you can define new variables anywhere you want!
         int* ptr = &c;
-        return 1 * * &ptr;
+        return 2 * * &ptr;
     };
 };
 result;

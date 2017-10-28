@@ -32,49 +32,53 @@
 #include "math.h"
 #include "world.hpp"
 
-class SDLRenderer;
-class SDLGLRenderer;
+namespace humrcraft {
+    namespace renderers {
+        class SDLRenderer;
+        class SDLGLRenderer;
 
-class SDLRenderer : public Renderer {
-    public:
-        SDL_Window* window;
-        SDL_Surface* buffer;
-        float zoom; //Pixels per Meter
-        SDLRenderer(const char* title, int w, int h);
-        virtual ~SDLRenderer();
-        virtual void begin();
-        virtual void end();
-        virtual bool getEvent(SDL_Event* event);
-        virtual V2i SDLMapPos(V2f pos);
-        virtual V2f SDLGetPos(V2i pos);
-        virtual int mapRGB(uint8_t r, uint8_t g, uint8_t b);
-        virtual void getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b);
-        virtual int mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-        virtual void getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a);
-        virtual int getPixel(V2f pos);
-        virtual void drawPixel(V2f pos, int color);
-        virtual void drawCircle(V2f pos, int r, int color);
-        virtual void drawSquare(V2f pos, V2f rot, int sidelen, int color);
-        virtual void drawEllipse(V2f pos1, V2f pos2, int color);
-        virtual void drawLine(V2f pos1, V2f pos2, int color);
-        virtual void drawRectangle(V2f pos1, V2f pos2, int color);
-        virtual int drawImage(V2f pos, SDL_Surface* image);
-};
-class SDLGLRenderer : public Renderer {
-    public:
-        int w, h;
-        SDL_Window* window;
-        SDL_GLContext context;
-        float zoom; //Pixels per Meter
-        SDLGLRenderer(const char* title, int w, int h, int mayorv, int minorv);
-        virtual ~SDLGLRenderer();
-        virtual void begin();
-        virtual void end();
-        virtual bool getEvent(SDL_Event* event);
-        virtual V2f GLMapPos(V2f pos, V2f rot); //TODO: improve this and the one below
-        virtual V2f GLGetPos(V2f pos, V2f rot);
-        virtual V2i SDLMapPos(V2f pos);
-        virtual V2f SDLGetPos(V2i pos);
-};
+        class SDLRenderer : public Renderer {
+            public:
+                SDL_Window* window;
+                SDL_Surface* buffer;
+                float zoom; //Pixels per Meter
+                SDLRenderer(const char* title, int w, int h);
+                virtual ~SDLRenderer();
+                virtual void begin();
+                virtual void end();
+                virtual bool getEvent(SDL_Event* event);
+                virtual math::V2i SDLMapPos(math::V2f pos);
+                virtual math::V2f SDLGetPos(math::V2i pos);
+                virtual int mapRGB(uint8_t r, uint8_t g, uint8_t b);
+                virtual void getRGB(int color, uint8_t* r, uint8_t* g, uint8_t* b);
+                virtual int mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+                virtual void getRGBA(int color, uint8_t* r, uint8_t* g, uint8_t* b, uint8_t* a);
+                virtual int getPixel(math::V2f pos);
+                virtual void drawPixel(math::V2f pos, int color);
+                virtual void drawCircle(math::V2f pos, int r, int color);
+                virtual void drawSquare(math::V2f pos, math::V2f rot, int sidelen, int color);
+                virtual void drawEllipse(math::V2f pos1, math::V2f pos2, int color);
+                virtual void drawLine(math::V2f pos1, math::V2f pos2, int color);
+                virtual void drawRectangle(math::V2f pos1, math::V2f pos2, int color);
+                virtual int drawImage(math::V2f pos, SDL_Surface* image);
+        };
+        class SDLGLRenderer : public Renderer {
+            public:
+                int w, h;
+                SDL_Window* window;
+                SDL_GLContext context;
+                float zoom; //Pixels per Meter
+                SDLGLRenderer(const char* title, int w, int h, int mayorv, int minorv);
+                virtual ~SDLGLRenderer();
+                virtual void begin();
+                virtual void end();
+                virtual bool getEvent(SDL_Event* event);
+                virtual math::V2f GLMapPos(math::V2f pos, math::V2f rot); //TODO: fix this and the one below
+                virtual math::V2f GLGetPos(math::V2f pos, math::V2f rot);
+                virtual math::V2i SDLMapPos(math::V2f pos);
+                virtual math::V2f SDLGetPos(math::V2i pos);
+        };
+    }
+}
 
 #endif

@@ -28,11 +28,15 @@
 #include <stdlib.h>
 #include "world.hpp"
 
+//TODO: add Game class and Game namespace
+
 class Thing;
+class Textures;
+class Tiles;
 class Gun;
 class Projectile;
 
-class Thing : public Object { //TODO: add model struct //TODO: add recreate function
+class Thing : public humrcraft::Object { //TODO: add model struct //TODO: add recreate function
     public:
         float maxhealth;
         float health;
@@ -40,41 +44,63 @@ class Thing : public Object { //TODO: add model struct //TODO: add recreate func
         GLuint textureid;
         Thing *head, *rhand, *lhand, *chest, *back, *legs, *feet;
         void* data;
-        size_t datasize;
+        int datasize;
         void (*initf)(Thing* thing);
-        void (*uninitf)();
-        void (*updatef)(double delta);
-        void (*renderf)(Renderer* renderer);
-        void (*speakf)(Speaker* speaker);
-        void (*usef)();
-        void (*attackf)();
-        void (*actionf)(const char* action);
-        void (*collisionCallbackf)(manifold* manifold);
-        Thing(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, float damage, GLuint textureid);
+        void (*uninitf)(Thing* thing);
+        void (*updatef)(Thing* thing, double delta);
+        void (*renderf)(Thing* thing, humrcraft::Renderer* renderer);
+        void (*speakf)(Thing* thing, humrcraft::Speaker* speaker);
+        void (*usef)(Thing* thing);
+        void (*attackf)(Thing* thing);
+        void (*actionf)(Thing* thing, const char* action);
+        void (*collisionCallbackf)(Thing* thing, struct humrcraft::manifold* manifold);
+        Thing(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, GLuint textureid);
         virtual ~Thing();
         virtual void update(double delta);
-        virtual void render(Renderer* renderer);
-        virtual void speak(Speaker* speaker);
+        virtual void render(humrcraft::Renderer* renderer);
+        virtual void speak(humrcraft::Speaker* speaker);
         virtual void use();
         virtual void attack();
         virtual void action(const char* action);
-        virtual void collisionCallback(manifold* manifold);
+        virtual void collisionCallback(struct humrcraft::manifold* manifold);
+};
+class Textures : public humrcraft::Object {
+    public:
+        utils::Vector<GLuint> textures;
+        Textures();
+        virtual ~Textures();
+        virtual void add(SDL_Surface* surface);
+        virtual GLuint& operator[](unsigned int n);
+};
+class Tiles : public humrcraft::Object {
+    public:
+        int sizex;
+        int sizey;
+        unsigned int* tiles;
+        Textures* textures;
+        /*struct world* world;
+        int x, y, heading;
+        struct lfr last;*/
+        Tiles(Textures* textures);
+        virtual ~Tiles();
+        virtual void update(double delta);
+        virtual void render(humrcraft::Renderer* renderer);
 };
 class Gun : public Thing {
     public:
         Projectile* sample;
-        Gun(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, GLuint textureid);
+        Gun(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, GLuint textureid);
         virtual ~Gun();
         //virtual void use();
 };
 class Projectile : public Thing {
     public:
         float speed;
-        Projectile(void* data, size_t datasize, void (*initf)(), void (*uninitf)(), Shape* shape, float health, float damage, float speed, GLuint textureid);
+        Projectile(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, float speed, GLuint textureid);
         virtual ~Projectile();
         virtual void update(double delta);
-        virtual void render(Renderer* renderer);
-        virtual void collisionCallback(manifold* manifold);
+        virtual void render(humrcraft::Renderer* renderer);
+        virtual void collisionCallback(struct humrcraft::manifold* manifold);
 };
 
 #endif

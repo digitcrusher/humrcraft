@@ -29,7 +29,7 @@
 
 //TODO: improve tree() and add more effects like metaballs
 
-bool tree(SDL_Surface* surface, int color, int seed, int startx, int starty, float startangle, size_t length, size_t lengthdiff,
+bool tree(SDL_Surface* surface, int color, int seed, int startx, int starty, float startangle, int length, int lengthdiff,
           float rotation, float rotationdiff, float branchchance, float branchangle, float branchanglediff);
 
 #endif

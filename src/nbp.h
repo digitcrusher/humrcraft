@@ -36,11 +36,11 @@ extern "C" {
 struct NBP_node {
     int x, y;
     struct NBP_node** connections;
-    size_t size;
+    int size;
 };
 struct NBP_path {
     struct NBP_node** nodes;
-    size_t length;
+    int length;
 };
 
 struct NBP_node* NBP_createNode(int x, int y);

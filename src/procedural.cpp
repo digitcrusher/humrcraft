@@ -29,7 +29,7 @@
 #include "procedural.hpp"
 
 bool tree(SDL_Surface* surface, int color, int seed, int startx, int starty, float startangle,
-          size_t length, size_t lengthdiff, float rotation, float rotationdiff, float branchchance, float branchangle, float branchanglediff) {
+          int length, int lengthdiff, float rotation, float rotationdiff, float branchchance, float branchangle, float branchanglediff) {
     if(!surface) {
         return 1;
     }
@@ -37,7 +37,7 @@ bool tree(SDL_Surface* surface, int color, int seed, int startx, int starty, flo
     float angle=startangle;
     srand(seed);
     for(unsigned int i=0, calclength=length+(rand()%lengthdiff)*(rand()%2?1:-1); i<calclength; i++) {
-        drawPixel(surface, x, y, color);
+        graphics::drawPixel(surface, x, y, color);
         if(branchchance && fmod(rand(), 1/branchchance)==0) {
             tree(surface, color, seed, x, y, branchangle+fmod(rand(), branchanglediff)*(rand()%2?1:-1)
                 ,length, lengthdiff, rotation, rotationdiff, branchchance, branchangle, branchanglediff);
