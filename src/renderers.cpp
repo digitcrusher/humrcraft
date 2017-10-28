@@ -202,7 +202,7 @@ namespace humrcraft {
             glLoadIdentity();
             glMatrixMode(GL_PROJECTION);
             glRotatef(-this->getOri().y, 0, 0, 1);
-            glTranslatef(-this->GLMapPos(Object::getPos(), -this->getOri()).x, -this->GLMapPos(Object::getPos(), -this->getOri()).y, 0);
+            glTranslatef(-this->GLMapPos(Object::getPos()).x, -this->GLMapPos(Object::getPos()).y, 0);
             SDL_GetWindowSize(this->window, &this->w, &this->h);
             glViewport(0, 0, this->w, this->h);
         }
@@ -212,15 +212,16 @@ namespace humrcraft {
         bool SDLGLRenderer::getEvent(SDL_Event* event) {
             return SDL_PollEvent(event);
         }
-        math::V2f SDLGLRenderer::GLMapPos(math::V2f pos, math::V2f rot) {
-            math::V2f pos1 = {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
+        math::V2f SDLGLRenderer::GLMapPos(math::V2f pos) {
+            /*math::V2f pos1 = {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
             math::V2f pos2 = {(float)1/(this->h/2)*pos.x*this->zoom, (float)1/(this->w/2)*pos.y*this->zoom};
             float s = fabs(math::trianglewave(rot.y-this->getOri().y));
             float c = fabs(math::trianglewave(rot.y-this->getOri().y+math::pi/2));
-            return {pos1.x*c+pos2.x*s, pos1.y*c+pos2.y*s};
+            return {pos1.x*c+pos2.x*s, pos1.y*c+pos2.y*s};*/
+            return {(float)1/(this->w/2)*pos.x*this->zoom, (float)1/(this->h/2)*pos.y*this->zoom};
         }
-        math::V2f SDLGLRenderer::GLGetPos(math::V2f pos, math::V2f rot) {
-            return {pos.x/this->zoom/((float)1/(this->w/2)), pos.y/this->zoom/((float)1/(this->h/2))};
+        math::V2f SDLGLRenderer::GLGetPos(math::V2f pos) {
+            return {pos.x/this->zoom/(float)1*(this->w/2), pos.y/this->zoom/(float)1*(this->h/2)};
         }
         math::V2i SDLGLRenderer::SDLMapPos(math::V2f pos) {
             return {this->w/2+(int)((pos.x-this->getPos().x)*this->zoom), this->h/2-(int)((pos.y-this->getPos().y)*this->zoom)};

@@ -464,14 +464,15 @@ namespace humrcraft {
                 if(startb.x <= enda.x && endb.x >= starta.x && startb.y <= starta.y && endb.y >= starta.y) {
                     manifold.penetration = 1;
                 }
-                manifold.starta = starta;
-                manifold.enda = enda;
-                manifold.tempstartb = tempstartb;
-                manifold.tempendb = tempendb;
-                manifold.startb = startb;
-                manifold.endb = endb;
+                manifold.size = sizeof(math::V2f)*6;
+                manifold.data = malloc(manifold.size);
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*0) = starta;
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*1) = enda;
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*2) = tempstartb;
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*3) = tempendb;
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*4) = startb;
+                *(math::V2f*)((char*)manifold.data+sizeof(math::V2f)*5) = endb;
             }
-            std::cout<<manifold.na.y<<", "<<manifold.nb.y<<'\n';
             manifold.fa = {(manifold.pa+manifold.pb)*(float)cos((manifold.a->getVel()-manifold.nb).y)*-(1+manifold.restitution)/2+manifold.penetration, manifold.nb.y};
             manifold.fb = {(manifold.pa+manifold.pb)*(float)cos((manifold.b->getVel()-manifold.na).y)*-(1+manifold.restitution)/2+manifold.penetration, manifold.na.y};
             if(output) {
@@ -490,6 +491,9 @@ namespace humrcraft {
             if(manifold.penetration > 0) {
                 manifold.a->applyImpulse(manifold.fa);
                 manifold.b->applyImpulse(manifold.fb);
+            }
+            if(manifold.data) {
+                free(manifold.data);
             }
         }
     }

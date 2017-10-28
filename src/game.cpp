@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <time.h>
 #include "game.hpp"
 #include "renderers.hpp"
 
@@ -75,23 +76,23 @@ void Thing::render(humrcraft::Renderer* renderer) {
             glEnable(GL_BLEND);
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
                 glBegin(GL_TRIANGLES);
-                    math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y-(float)1/2}, {0, 0});
+                    math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y-(float)1/2});
                     glTexCoord2f(0, 1);
                     glVertex3f(pos.x, pos.y, 1);
-                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2}, {0, 0});
+                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
                     glTexCoord2f(1, 1);
                     glVertex3f(pos.x, pos.y, 1);
-                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2}, {0, 0});
+                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
                     glTexCoord2f(0, 0);
                     glVertex3f(pos.x, pos.y, 0);
 
-                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y+(float)1/2}, {0, 0});
+                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y+(float)1/2});
                     glTexCoord2f(1, 0);
                     glVertex3f(pos.x, pos.y, 1);
-                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2}, {0, 0});
+                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
                     glTexCoord2f(1, 1);
                     glVertex3f(pos.x, pos.y, 1);
-                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2}, {0, 0});
+                    pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
                     glTexCoord2f(0, 0);
                     glVertex3f(pos.x, pos.y, 0);
                 glEnd();
@@ -162,14 +163,14 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
     sizex = 50;
     sizey = 50;
     tiles = (unsigned int*)malloc(sizeof(unsigned int)*this->sizex*this->sizey);
-    /*world = createWorld(this->sizex, this->sizey);
+    world = createWorld(this->sizex, this->sizey);
     srand(::time(NULL));
     resetWorld(world, {Wall, 0});
     createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, ::time(NULL));
     x = 0;
     y = 0;
     heading = 0;
-    last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*/
+    last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};
     this->textures = textures;
     for(int x=0; x<this->sizex; x++) {
         for(int y=0; y<this->sizey; y++) {
@@ -178,7 +179,7 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
     }
 }
  Tiles::~Tiles() {
-    //deleteWorld(world);
+    deleteWorld(world);
     free(this->tiles);
 }
  void Tiles::update(double delta) {
@@ -187,7 +188,7 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
  void Tiles::render(humrcraft::Renderer* renderer) {
     humrcraft::Object::render(renderer);
     if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
-    /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
+    if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
         srand(::time(NULL));
         resetWorld(world, {Wall, 0});
         createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, 0);
@@ -196,50 +197,50 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
         heading = 0;
         last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};
     }
-    for(unsigned int x=0; x<this->sizex; x++) {
-        for(unsigned int y=0; y<this->sizey; y++) {
+    for(int x=0; x<this->sizex; x++) {
+        for(int y=0; y<this->sizey; y++) {
             switch(getTile(world, x, y)->type) {
                 case Wall:
-                    this->tiles[this->sizex*y+x] = 1;
-                    break;
-                case Path:
-                    this->tiles[this->sizex*y+x] = 2;
-                    break;
-                case Exit:
                     this->tiles[this->sizex*y+x] = 3;
                     break;
-                default:
+                case Path:
                     this->tiles[this->sizex*y+x] = 4;
+                    break;
+                case Exit:
+                    this->tiles[this->sizex*y+x] = 5;
+                    break;
+                default:
+                    this->tiles[this->sizex*y+x] = 6;
                     break;
             }
         }
-    }*/
+    }
     glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            math::V2f start = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLGetPos({-1, 1}, {0, 0});
-            math::V2f end = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLGetPos({1, -1}, {0, 0});
+            math::V2f start = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLGetPos({-1, 1});
+            math::V2f end = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLGetPos({1, -1});
             for(int y=fmax(this->sizey-start.y-(float)this->sizey/2, 0); y<fmin(this->sizey-end.y-(float)this->sizey/2, this->sizey); y++) {
                 for(int x=fmax(start.x+(float)this->sizex/2, 0); x<fmin(end.x+(float)this->sizex/2, this->sizex); x++) {
                     glBindTexture(GL_TEXTURE_2D, (*textures)[this->tiles[this->sizex*y+x]]);
                     glBegin(GL_TRIANGLES);
-                        math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
+                        math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
                         glTexCoord2f(0, 1);
                         glVertex3f(pos.x, pos.y, 1);
-                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
+                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
                         glTexCoord2f(1, 1);
                         glVertex3f(pos.x, pos.y, 1);
-                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
+                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
                         glTexCoord2f(0, 0);
                         glVertex3f(pos.x, pos.y, 0);
 
-                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
+                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
                         glTexCoord2f(1, 0);
                         glVertex3f(pos.x, pos.y, 1);
-                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2}, {0, 0});
+                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
                         glTexCoord2f(1, 1);
                         glVertex3f(pos.x, pos.y, 1);
-                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2}, {0, 0});
+                        pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
                         glTexCoord2f(0, 0);
                         glVertex3f(pos.x, pos.y, 0);
                     glEnd();
@@ -299,10 +300,10 @@ void Projectile::render(humrcraft::Renderer* renderer) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glColor4f(1, 1, 0, 1);
         glBegin(GL_LINES);
-            math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x, this->getPos().y}, {0, 0});
+            math::V2f pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x, this->getPos().y});
             glTexCoord2f(0, 1);
             glVertex3f(pos.x, pos.y, 1);
-            pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x, this->getPos().y}, {0, 0});
+            pos = ((humrcraft::renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x, this->getPos().y});
             glTexCoord2f(1, 1);
             glVertex3f(pos.x, pos.y, 1);
         glEnd();

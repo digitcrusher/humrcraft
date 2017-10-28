@@ -73,8 +73,8 @@ namespace humrcraft {
                 virtual void begin();
                 virtual void end();
                 virtual bool getEvent(SDL_Event* event);
-                virtual math::V2f GLMapPos(math::V2f pos, math::V2f rot); //TODO: fix this and the one below
-                virtual math::V2f GLGetPos(math::V2f pos, math::V2f rot);
+                virtual math::V2f GLMapPos(math::V2f pos);
+                virtual math::V2f GLGetPos(math::V2f pos);
                 virtual math::V2i SDLMapPos(math::V2f pos);
                 virtual math::V2f SDLGetPos(math::V2i pos);
         };

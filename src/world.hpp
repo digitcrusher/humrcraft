@@ -51,6 +51,8 @@ namespace humrcraft {
         int position;
     };
     struct manifold {
+        void* data;
+        int size;
         Object* a;
         Object* b;
         math::V2f angle;
@@ -66,13 +68,6 @@ namespace humrcraft {
         float pb; //momentum b
         math::V2f fa; //force for a
         math::V2f fb; //force for b
-        //default collision check
-        math::V2f starta;
-        math::V2f enda;
-        math::V2f tempstartb;
-        math::V2f tempendb;
-        math::V2f startb;
-        math::V2f endb;
     };
     class Object { //TODO: move from 2d to 3d //TODO: change to momentum instead of velocity //TODO: improve shared objects
         public:

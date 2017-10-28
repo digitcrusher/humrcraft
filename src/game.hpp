@@ -27,6 +27,7 @@
 #define GAME_HPP
 #include <stdlib.h>
 #include "world.hpp"
+#include "maze.h"
 
 //TODO: add Game class and Game namespace
 
@@ -78,9 +79,9 @@ class Tiles : public humrcraft::Object {
         int sizey;
         unsigned int* tiles;
         Textures* textures;
-        /*struct world* world;
+        struct world* world;
         int x, y, heading;
-        struct lfr last;*/
+        struct lfr last;
         Tiles(Textures* textures);
         virtual ~Tiles();
         virtual void update(double delta);

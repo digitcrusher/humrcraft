@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <time.h>
 #include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -177,7 +176,7 @@ int main(int argc, char** argv) {
     Thing* human = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, (*textures)[1]);
     human->pos = {0, 0};
     world->add(human);
-    Thing* matemat = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.5}}), 1, 0, (*textures)[2]);
+    Thing* matemat = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2]);
     matemat->pos = {2, 2};
     world->add(matemat);
     hero = human;

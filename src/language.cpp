@@ -441,6 +441,9 @@ namespace CIPL {
         return NULL;
     }
     Variable* Scope::parse(const char** tokens, int size) {
+        /*
+         * token parsing functions
+         */
         auto parseParentheses = [&](const char** tokens, int size, int* offset)->Variable*{
             int i=0;
             if(checkGroup(tokens[i][0]) == 5) {
@@ -511,6 +514,9 @@ namespace CIPL {
         for(int i=0; i<size; i++) {
             int group = checkGroup(tokens[i][0]);
             if(group != 1) {
+                /*
+                 * parse lvalue
+                 */
                 if(lvalue) {
                     std::cout<<"expected an operator\n";
                     return NULL;
@@ -596,6 +602,9 @@ namespace CIPL {
                         break;
                 }
             }else {
+                /*
+                 * parse operator
+                 */
                 for(int j=0; j<this->ops.size(); j++) {
                     if(!strcmp(this->ops[j]->id, tokens[i]) && !(!this->ops[j]->uselvalue ^ !lvalue)) {
                         op = this->ops[j];
@@ -606,6 +615,9 @@ namespace CIPL {
                     std::cout<<"unidentified operator "<<tokens[i]<<'\n';
                     return NULL;
                 }
+                /*
+                 * check lvalue
+                 */
                 if(op->uselvalue) {
                     if(lvalue) {
                         if(!typecmp(lvalue->get()->type, op->lvalue)) {
@@ -623,9 +635,11 @@ namespace CIPL {
                     std::cout<<"operator "<<op->id<<" doesn't need a lvalue\n";
                     return NULL;
                 }
+                /*
+                 * parse rvalue
+                 */
                 if(op->uservalue) {
                     int start = ++i;
-                    int priority = (int)~0>>1;
                     while(i<size) {
                         group = checkGroup(tokens[i][0]);
                         if(group == 1) {
@@ -641,7 +655,9 @@ namespace CIPL {
                                 std::cout<<"unidentified operator "<<tokens[i]<<'\n';
                                 return NULL;
                             }
-                            priority = op2->priority;
+                            if(!(op->priority<op2->priority) && op->uselvalue) {
+                                break;
+                            }
                         }else if(group == 5) {
                             int parentheses = 0;
                             while(i < size) {
@@ -662,14 +678,14 @@ namespace CIPL {
                                 return NULL;
                             }
                         }
-                        if(!(op->priority<priority) && op->uselvalue) {
-                            break;
-                        }
                         i++;
                     }
                     rvalue = this->parse(tokens+start, i-start);
                     i--;
                 }
+                /*
+                 * check rvalue
+                 */
                 if(op->uservalue) {
                     if(rvalue) {
                         if(!typecmp(rvalue->get()->type, op->rvalue)) {
