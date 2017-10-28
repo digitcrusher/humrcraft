@@ -41,7 +41,7 @@ namespace CIPL {
     bool varcmp(Variable* var, struct type type) {
         return typecmp(var->type, type);
     }
-    int checkGroup(char c) {
+    int checkGroup(char c) { //TODO: make this customizable
         /* 0 - space
          * 1 - op
          * 2 - num
@@ -681,7 +681,6 @@ namespace CIPL {
                         i++;
                     }
                     rvalue = this->parse(tokens+start, i-start);
-                    i--;
                 }
                 /*
                  * check rvalue

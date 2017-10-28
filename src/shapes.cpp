@@ -26,84 +26,114 @@
 #include "shapes.hpp"
 #include "renderers.hpp"
 
-Circle::Circle(float radius) : Shape() {
-    this->family.pushBack("Circle");
-    this->radius = radius;
-}
-Circle::Circle(float radius, material mat) : Shape(mat) {
-    this->family.pushBack("Circle");
-    this->radius = radius;
-}
-Circle::Circle(float radius, material mat, int r, int g, int b, int a) : Shape(mat, r, g, b, a) {
-    this->family.pushBack("Circle");
-    this->radius = radius;
-}
-Circle::~Circle() {
-}
-void Circle::render(Renderer* renderer) {
-    Shape::render(renderer);
-    if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
-    ((SDLRenderer*)renderer)->drawCircle(this->getPos(), this->radius, ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri()).x,
-                    this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(this->getOri()).x},
-                    ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-}
-float Circle::getVolume() {
-    return M_PI*this->radius*this->radius;
-}
-V2f Circle::getRadius(V2f angle) {
-    return {this->radius, angle.y};
-}
-V2f Circle::getNormal(V2f angle) {
-    return {0, angle.y};
-}
+#include <iostream>
 
-Square::Square(float sidelen) : Shape() {
-    this->family.pushBack("Square");
-    this->sidelen = sidelen;
-}
-Square::Square(float sidelen, material mat) : Shape(mat) {
-    this->family.pushBack("Square");
-    this->sidelen = sidelen;
-}
-Square::Square(float sidelen, material mat, int r, int g, int b, int a) : Shape(mat, r, g, b, a) {
-    this->family.pushBack("Square");
-    this->sidelen = sidelen;
-}
-Square::~Square() {
-}
-void Square::render(Renderer* renderer) {
-    Shape::render(renderer);
-    if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
-    ((SDLRenderer*)renderer)->drawSquare(this->getPos(), this->getOri(), this->sidelen, ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-    ((SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
-                    this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
-                    ((SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-}
-float Square::getVolume() {
-    return this->sidelen*this->sidelen;
-}
-V2f Square::getRadius(V2f angle) {
-    return {squarer(-(this->getOri().y+angle.y), this->sidelen), angle.y};
-}
-V2f Square::getNormal(V2f angle) {
-    return {0, angle.y};
-}
+namespace humrcraft {
+    namespace shapes {
+        Circle::Circle(float radius) : Shape() {
+            this->family.pushBack("Circle");
+            this->radius = radius;
+        }
+        Circle::Circle(float radius, struct material material) : Shape(material) {
+            this->family.pushBack("Circle");
+            this->radius = radius;
+        }
+        Circle::Circle(float radius, struct material material, int r, int g, int b, int a) : Shape(material, r, g, b, a) {
+            this->family.pushBack("Circle");
+            this->radius = radius;
+        }
+        Circle::~Circle() {
+        }
+        void Circle::render(Renderer* renderer) {
+            Shape::render(renderer);
+            if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+            ((humrcraft::renderers::SDLRenderer*)renderer)->drawCircle(this->getPos(), this->radius, ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+            ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri()).x,
+                this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(this->getOri()).x},
+                ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+        }
+        float Circle::getVolume() {
+            return math::pi*this->radius*this->radius;
+        }
+        math::V2f Circle::getRadius(math::V2f angle) {
+            return {this->radius, angle.y};
+        }
+        math::V2f Circle::getNormal(math::V2f angle) {
+            return {0, angle.y};
+        }
 
-bool circleCircle(manifold* manifold, World* world) {
-    if(!manifold->a->shape->checkFamily(manifold->a->shape, "Circle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Circle", 2)) {
-        return 1;
+        Square::Square(float sidelen) : Shape() {
+            this->family.pushBack("Square");
+            this->sidelen = sidelen;
+        }
+        Square::Square(float sidelen, struct material material) : Shape(material) {
+            this->family.pushBack("Square");
+            this->sidelen = sidelen;
+        }
+        Square::Square(float sidelen, struct material material, int r, int g, int b, int a) : Shape(material, r, g, b, a) {
+            this->family.pushBack("Square");
+            this->sidelen = sidelen;
+        }
+        Square::~Square() {
+        }
+        void Square::render(Renderer* renderer) {
+            Shape::render(renderer);
+            if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+            ((humrcraft::renderers::SDLRenderer*)renderer)->drawSquare(this->getPos(), this->getOri(), this->sidelen, ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+            ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
+                this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
+                ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
+        }
+        float Square::getVolume() {
+            return this->sidelen*this->sidelen;
+        }
+        math::V2f Square::getRadius(math::V2f angle) {
+            return {math::squarer(-(this->getOri().y+angle.y), this->sidelen), angle.y};
+        }
+        math::V2f Square::getNormal(math::V2f angle) {
+            return {0, angle.y};
+        }
+
+        bool circleCircle(struct manifold* manifold, World* world) {
+            if(!manifold || !manifold->a->shape->checkFamily(manifold->a->shape, "Circle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Circle", 2)) {
+                return 1;
+            }
+            manifold->ra = manifold->a->shape->getRadius(manifold->angle);
+            manifold->rb = manifold->b->shape->getRadius(manifold->angle+(math::V2f){0, (float)math::pi});
+            math::V2f pos1 = {(float)fmax(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmax(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
+            math::V2f pos2 = {(float)fmin(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmin(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
+            manifold->penetration = manifold->ra.x+manifold->rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
+            return 0;
+        }
+        bool rectangleRectangle(struct manifold* manifold, World* world) {
+            if(!manifold || !manifold->a->shape->checkFamily(manifold->a->shape, "Rectangle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Rectangle", 2)) {
+                return 1;
+            }
+            Rectangle* a = (Rectangle*)manifold->a->shape;
+            Rectangle* b = (Rectangle*)manifold->b->shape;
+            math::V2f diff = {(float)fabs(a->getPos().x-b->getPos().x), (float)fabs(a->getPos().y-b->getPos().y)};
+            math::V2f rectside;
+            if(a->getPos().x > b->getPos().x) {
+                rectside.x = fabs(a->rectangle.v1.x)+fabs(b->rectangle.v2.x);
+            }else {
+                rectside.x = fabs(a->rectangle.v2.x)+fabs(b->rectangle.v1.x);
+            }
+            if(a->getPos().y > b->getPos().y) {
+                rectside.y = fabs(a->rectangle.v1.y)+fabs(b->rectangle.v2.y);
+            }else {
+                rectside.y = fabs(a->rectangle.v2.y)+fabs(b->rectangle.v1.y);
+            }
+            diff = diff-rectside;
+            if(diff.x < 0 && diff.y < 0) {
+                manifold->penetration = (float)fabs(diff.x>diff.y ? diff.x : diff.y);
+            }else {
+                manifold->penetration = 0;
+            }
+            manifold->size = sizeof(math::V2f)*2;
+            manifold->data = malloc(manifold->size);
+            *(math::V2f*)((char*)manifold->data+sizeof(math::V2f)*0) = diff;
+            *(math::V2f*)((char*)manifold->data+sizeof(math::V2f)*1) = rectside;
+            return 0;
+        }
     }
-    manifold->ra = manifold->a->shape->getRadius(manifold->angle);
-    manifold->rb = manifold->b->shape->getRadius(manifold->angle+(V2f){0, M_PI});
-    V2f pos1 = {(float)fmax(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmax(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
-    V2f pos2 = {(float)fmin(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmin(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
-    manifold->penetration = manifold->ra.x+manifold->rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
-    return 0;
-}
-bool rectangleRectangle(manifold* manifold, World* world) {
-    if(!manifold->a->shape->checkFamily(manifold->a->shape, "Rectangle", 2) || !manifold->b->shape->checkFamily(manifold->b->shape, "Rectangle", 2)) {
-        return 1;
-    }
-    return 0;
 }

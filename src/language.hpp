@@ -28,6 +28,7 @@
 #include "utils.hpp"
 
 //TODO: retype struct type to class
+//TODO: divide this file into smaller files
 
 namespace CIPL {
     class Scope;
@@ -35,7 +36,7 @@ namespace CIPL {
     class Variable;
     class Expression;
     class Return;
-    struct type { //TODO: floating point numbers and make every operator don't consider every variable an int //TODO: add label type
+    struct type { //TODO: floating point numbers and make every operator don't consider every variable an int //TODO: add variable id type
         const char* id;
         char* opts; //TODO: fix this
         int size;
