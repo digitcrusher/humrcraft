@@ -74,7 +74,7 @@ namespace humrcraft {
             int id;
             utils::Vector<const char*> family;
             World* world; //TODO: change to Object*
-            Shape* shape;
+            Shape* shape; //TODO: make this a Vector
             float time; //Seconds
             bool stationary;
             bool shared;

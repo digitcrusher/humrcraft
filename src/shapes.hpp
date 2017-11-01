@@ -60,6 +60,18 @@ namespace humrcraft {
                 virtual math::V2f getRadius(math::V2f angle);
                 virtual math::V2f getNormal(math::V2f angle);
         };
+        class Rectangle : public Shape {
+            public:
+                math::V2fPair rectangle; //Relative to the center of the shape
+                Rectangle(math::V2fPair rectangle);
+                Rectangle(math::V2fPair rectangle, struct material material);
+                Rectangle(math::V2fPair rectangle, struct material material, int r, int g, int b, int a);
+                virtual ~Rectangle();
+                virtual void render(Renderer* renderer);
+                virtual float getVolume();
+                virtual math::V2f getRadius(math::V2f angle);
+                virtual math::V2f getNormal(math::V2f angle);
+        };
         class Polygon : public Shape {
             public:
                 utils::Vector<math::V2f> vertices;
@@ -132,62 +144,6 @@ namespace humrcraft {
                             }
                         }
                     }
-                }
-        };
-        class Rectangle : public Shape {
-            public:
-                math::V2fPair rectangle; //Relative to the center of the shape
-                Rectangle(math::V2fPair rectangle) : Shape() {
-                    this->family.pushBack("Rectangle");
-                    this->rectangle = rectangle;
-                }
-                Rectangle(math::V2fPair rectangle, struct material material) : Shape(material) {
-                    this->family.pushBack("Rectangle");
-                    this->rectangle = rectangle;
-                }
-                Rectangle(math::V2fPair rectangle, struct material material, int r, int g, int b, int a) : Shape(material, r, g, b, a) {
-                    this->family.pushBack("Rectangle");
-                    this->rectangle = rectangle;
-                }
-                virtual ~Rectangle() {
-                }
-                virtual void render(Renderer* renderer) {
-                    Shape::render(renderer);
-                    if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
-                        this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawRectangle(this->getPos()+this->rectangle.v1, this->getPos()+this->rectangle.v2,
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), (math::V2f){this->rectangle.v1.x, this->rectangle.v1.y}+this->getPos(),
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), (math::V2f){this->rectangle.v2.x, this->rectangle.v2.y}+this->getPos(),
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), (math::V2f){this->rectangle.v1.x, this->rectangle.v2.y}+this->getPos(),
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), (math::V2f){this->rectangle.v2.x, this->rectangle.v1.y}+this->getPos(),
-                        ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
-                }
-                virtual float getVolume() {
-                    return (this->rectangle.v2.x+-this->rectangle.v1.x)*(this->rectangle.v2.y+-this->rectangle.v1.y);
-                }
-                virtual math::V2f getRadius(math::V2f angle) {
-                    return angle;
-                }
-                virtual math::V2f getNormal(math::V2f angle) {
-                    angle = {angle.x, (float)(angle.y < 0 ? math::pi*2-fmod(angle.y, math::pi*2) : fmod(angle.y, math::pi*2))};
-                    if(angle.y > this->rectangle.v2.x/(this->rectangle.v2.x+-this->rectangle.v1.y)*math::pi/2+math::pi/2*3) {
-                        return {angle.x, (float)math::pi*2};
-                    }else if(angle.y > -this->rectangle.v1.y/(-this->rectangle.v1.y+-this->rectangle.v1.x)*math::pi/2+math::pi) {
-                        return {angle.x, (float)math::pi/2*3};
-                    }else if(angle.y > -this->rectangle.v1.x/(-this->rectangle.v1.x+this->rectangle.v2.y)*math::pi/2+math::pi/2) {
-                        return {angle.x, (float)math::pi};
-                    }else if(angle.y > this->rectangle.v2.y/(this->rectangle.v2.y+this->rectangle.v2.x)*math::pi/2) {
-                        return {angle.x, (float)math::pi/2};
-                    }else {
-                        return {angle.x, 0};
-                    }
-                    return angle;
                 }
         };
 

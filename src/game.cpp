@@ -23,7 +23,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include <time.h>
 #include "game.hpp"
 #include "renderers.hpp"
 
@@ -163,14 +162,14 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
     sizex = 50;
     sizey = 50;
     tiles = (unsigned int*)malloc(sizeof(unsigned int)*this->sizex*this->sizey);
-    world = createWorld(this->sizex, this->sizey);
+    /*world = createWorld(this->sizex, this->sizey);
     srand(::time(NULL));
     resetWorld(world, {Wall, 0});
     createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, ::time(NULL));
     x = 0;
     y = 0;
     heading = 0;
-    last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};
+    last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*/
     this->textures = textures;
     for(int x=0; x<this->sizex; x++) {
         for(int y=0; y<this->sizey; y++) {
@@ -179,7 +178,7 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
     }
 }
  Tiles::~Tiles() {
-    deleteWorld(world);
+    //deleteWorld(world);
     free(this->tiles);
 }
  void Tiles::update(double delta) {
@@ -188,7 +187,7 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
  void Tiles::render(humrcraft::Renderer* renderer) {
     humrcraft::Object::render(renderer);
     if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
-    if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
+    /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
         srand(::time(NULL));
         resetWorld(world, {Wall, 0});
         createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, 0);
@@ -197,24 +196,24 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
         heading = 0;
         last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};
     }
-    for(int x=0; x<this->sizex; x++) {
-        for(int y=0; y<this->sizey; y++) {
+    for(unsigned int x=0; x<this->sizex; x++) {
+        for(unsigned int y=0; y<this->sizey; y++) {
             switch(getTile(world, x, y)->type) {
                 case Wall:
-                    this->tiles[this->sizex*y+x] = 3;
+                    this->tiles[this->sizex*y+x] = 1;
                     break;
                 case Path:
-                    this->tiles[this->sizex*y+x] = 4;
+                    this->tiles[this->sizex*y+x] = 2;
                     break;
                 case Exit:
-                    this->tiles[this->sizex*y+x] = 5;
+                    this->tiles[this->sizex*y+x] = 3;
                     break;
                 default:
-                    this->tiles[this->sizex*y+x] = 6;
+                    this->tiles[this->sizex*y+x] = 4;
                     break;
             }
         }
-    }
+    }*/
     glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -43,10 +43,6 @@
 #include "game.hpp"
 #include "language.hpp"
 
-struct Clock {
-
-};
-
 class BigNumber {
     utils::Vector<char> data;
     bool sign;
@@ -209,6 +205,9 @@ int main(int argc, char** argv) {
     int frames=0, updates=0;
     long lastTime = utils::getMS();
     running = 1;
+    struct utils::timer timer;
+    utils::setLoopTimer(&timer, 0, 0);
+    utils::resetTimer(&timer);
     while(running) {
         long now = utils::getMS();
         deltaUpdate += (now-lastUpdate)/msPerUpdate;
@@ -289,7 +288,7 @@ int main(int argc, char** argv) {
                         break;
                     case SDL_MOUSEMOTION:
                         if(!pause) {
-                            hero->ori = fatp(hero->pos, renderer->SDLGetPos({event.motion.x, event.motion.y}));
+                            hero->ori = math::fatp(hero->pos, renderer->SDLGetPos({event.motion.x, event.motion.y}));
                         }
                         break;
                 }
@@ -309,7 +308,7 @@ int main(int argc, char** argv) {
         }
         if(utils::getMS()-lastTime >= 1000) {
             lastTime += 1000;
-            std::cout<<updates<<" UPS, "<<frames<<" FPS\n";
+            std::cout<<updates<<" UPS, "<<frames<<" FPS, "<<utils::getElapsedTimer(timer)<<" SEC\n";
             frames = 0;
             updates = 0;
         }

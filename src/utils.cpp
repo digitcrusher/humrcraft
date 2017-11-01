@@ -27,6 +27,16 @@
 #include "utils.hpp"
 
 namespace utils {
+    void resetTimer(struct timer* timer) {
+        timer->lasttime =(double)getMS()/1000;
+    }
+    void setLoopTimer(struct timer* timer, bool loopover, double looplength) {
+        timer->loopover = loopover;
+        timer->looplength = looplength;
+    }
+    double getElapsedTimer(struct timer timer) {
+        return timer.loopover?fmod((double)getMS()/1000-timer.lasttime, timer.looplength):(double)getMS()/1000-timer.lasttime;
+    }
     #if defined(__linux__)
     #include <stdio.h>
     #include <termios.h>

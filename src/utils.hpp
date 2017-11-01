@@ -31,32 +31,14 @@
 //TODO: add a sorting algorithm
 
 namespace utils {
-    #if defined(__linux__)
-    long getMS();
-    long getNS();
-    int getch();
-    #elif defined(_WIN32)
-    long getMS();
-    long getNS();
-    void hidecursor();
-    #endif
-
-    unsigned int brr(unsigned int number, unsigned int bits); //Bitwise Right Rotate
-    unsigned int blr(unsigned int number, unsigned int bits); //Bitwise Left Rotate
-    int indexof(const char* string, char search); //Search string for search
-    int intlen(int x); //How many digits in x?
-    int uintlen(unsigned int x); //How many digits in x?
-    int floatlen(float x); //How many digits in x?
-    bool stof(const char* str, float* ret); //Convert str to a float
-    bool stoi(const char* str, int* ret); //Convert str to an int
-    bool stoui(const char* str, unsigned int* ret); //Convert str to an unsigned int
-    char* itos(int x); //Convert int to string
-    char* uitos(unsigned int x); //Convert unsigned int to string
-    char* ftos(float x); //Convert float to string
-    int htoi(const char* hex); //Convert hex string to int
-    //char* itos(int input, char* msg); //Convert int to string and concatenate msg to the end !!!!!NOT USED!!!!!
-    char* encode(const char* str, unsigned int size, int pass);
-    char* decode(const char* str, unsigned int size, int pass);
+    struct timer {
+        double lasttime;
+        double looplength;
+        bool loopover;
+    };
+    void resetTimer(struct timer* timer);
+    void setLoopTimer(struct timer* timer, bool loopover, double looplength);
+    double getElapsedTimer(struct timer timer);
 
     template<typename T> class Vector {
         private:
@@ -217,6 +199,32 @@ namespace utils {
         this->elems = rvalue.elems;
         return *this;
     }
+
+    #if defined(__linux__)
+    long getMS();
+    long getNS();
+    int getch();
+    #elif defined(_WIN32)
+    long getMS();
+    long getNS();
+    void hidecursor();
+    #endif
+    unsigned int brr(unsigned int number, unsigned int bits); //Bitwise Right Rotate
+    unsigned int blr(unsigned int number, unsigned int bits); //Bitwise Left Rotate
+    int indexof(const char* string, char search); //Search string for search
+    int intlen(int x); //How many digits in x?
+    int uintlen(unsigned int x); //How many digits in x?
+    int floatlen(float x); //How many digits in x?
+    bool stof(const char* str, float* ret); //Convert str to a float
+    bool stoi(const char* str, int* ret); //Convert str to an int
+    bool stoui(const char* str, unsigned int* ret); //Convert str to an unsigned int
+    char* itos(int x); //Convert int to string
+    char* uitos(unsigned int x); //Convert unsigned int to string
+    char* ftos(float x); //Convert float to string
+    int htoi(const char* hex); //Convert hex string to int
+    //char* itos(int input, char* msg); //Convert int to string and concatenate msg to the end !!!!!NOT USED!!!!!
+    char* encode(const char* str, unsigned int size, int pass);
+    char* decode(const char* str, unsigned int size, int pass);
 }
 
 #endif
