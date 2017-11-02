@@ -202,7 +202,7 @@ namespace humrcraft {
             glLoadIdentity();
             glMatrixMode(GL_PROJECTION);
             glRotatef(-this->getOri().y, 0, 0, 1);
-            glTranslatef(-this->GLMapPos(Object::getPos()).x, -this->GLMapPos(Object::getPos()).y, 0);
+            glTranslatef(-this->GLMapPos(humrcraft::Object::getPos()).x, -this->GLMapPos(humrcraft::Object::getPos()).y, 0);
             SDL_GetWindowSize(this->window, &this->w, &this->h);
             glViewport(0, 0, this->w, this->h);
         }

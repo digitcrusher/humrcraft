@@ -27,6 +27,8 @@
 #define MATH_HPP
 #include <math.h>
 
+//TODO: add a function which calculates the distance betweem 2 points
+
 namespace math {
     const double pi=3.14159265358979323846;
 

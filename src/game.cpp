@@ -26,7 +26,7 @@
 #include "game.hpp"
 #include "renderers.hpp"
 
-Thing::Thing(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, GLuint textureid) : humrcraft::Object(shape) {
+Thing::Thing(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, GLuint textureid) : humrcraft::Object(shape) {
     this->family.pushBack("Thing");
     this->maxhealth = health;
     this->health = this->maxhealth;
@@ -41,6 +41,7 @@ Thing::Thing(void* data, int datasize, void (*initf)(Thing* thing), void (*unini
     this->feet = NULL;
     this->data = data;
     this->datasize = datasize;
+    this->recreatef = recreatef;
     this->initf = initf;
     this->uninitf = uninitf;
     this->updatef = NULL;
@@ -58,6 +59,12 @@ Thing::~Thing() {
     if(this->uninitf) {
         this->uninitf(this);
     }
+}
+Thing* Thing::recreate(void* data, int datasize) {
+    if(this->recreatef) {
+        return this->recreatef(this, data, datasize);
+    }
+    return NULL;
 }
 void Thing::update(double delta) {
     humrcraft::Object::update(delta);
@@ -271,8 +278,8 @@ Tiles::Tiles(Textures* textures) : humrcraft::Object(NULL) {
     glDisable(GL_TEXTURE_2D);
 }
 
-Gun::Gun(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, GLuint textureid) :
-    Thing(data, datasize, initf, uninitf, shape, health, 0, textureid) {
+Gun::Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, GLuint textureid) :
+    Thing(data, datasize, recreatef, initf, uninitf, shape, health, 0, textureid) {
     this->family.pushBack("Gun");
 }
 Gun::~Gun() {
@@ -283,8 +290,8 @@ Gun::~Gun() {
     }
 }*/
 
-Projectile::Projectile(void* data, int datasize, void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, float speed, GLuint textureid) :
-Thing(data, datasize, initf, uninitf, shape, health, damage, textureid) {
+Projectile::Projectile(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), humrcraft::Shape* shape, float health, float damage, float speed, GLuint textureid) :
+Thing(data, datasize, recreatef, initf, uninitf, shape, health, damage, textureid) {
     this->family.pushBack("Projectile");
     this->speed = speed;
 }

@@ -62,7 +62,7 @@ namespace humrcraft {
                 virtual void drawRectangle(math::V2f pos1, math::V2f pos2, int color);
                 virtual int drawImage(math::V2f pos, SDL_Surface* image);
         };
-        class SDLGLRenderer : public Renderer {
+        class SDLGLRenderer : public Renderer { //TODO: add a 3d model
             public:
                 int w, h;
                 SDL_Window* window;

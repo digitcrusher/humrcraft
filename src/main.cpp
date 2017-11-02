@@ -169,10 +169,18 @@ int main(int argc, char** argv) {
     /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
     humr->pos = {0, 0};
     world->add(humr);*/
-    Thing* human = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, (*textures)[1]);
+    Thing* humanbase = new Thing(NULL, 0, [&](Thing* base, void* data, int datasize) {
+        return new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
+            1, 0, (*textures)[1]);
+    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, (*textures)[1]);
+    Thing* matematbase = new Thing(NULL, 0, [&](Thing* base, void* data, int datasize) {
+        return new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}),
+            1, 0, (*textures)[2]);
+    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2]);
+    Thing* human = humanbase->recreate(NULL, 0);
     human->pos = {0, 0};
     world->add(human);
-    Thing* matemat = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2]);
+    Thing* matemat = matematbase->recreate(NULL, 0);
     matemat->pos = {2, 2};
     world->add(matemat);
     hero = human;
@@ -294,7 +302,9 @@ int main(int argc, char** argv) {
                 }
                 //frame->processEvent(event);
             }
-            if(!pause) update(msPerUpdate/1000);
+            if(!pause) {
+                update(msPerUpdate/1000);
+            }
             updates++;
             deltaUpdate -= 1;
         }
