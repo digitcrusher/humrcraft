@@ -36,7 +36,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
 #include "utils.hpp"
-#include "world.hpp"
+#include "game.hpp"
 #include "shapes.hpp"
 #include "renderers.hpp"
 #include "graphics.hpp"
@@ -66,7 +66,7 @@ class BigNumber {
     }
 };
 
-humrcraft::World* world = new humrcraft::World();
+humrcraft::game::Game* game = new humrcraft::game::Game();
 humrcraft::renderers::SDLGLRenderer* renderer;
 humrcraft::Speaker* speaker;
 humrcraft::game::Textures* textures;
@@ -75,22 +75,22 @@ float gmulti = 1;
 bool pause = 1;
 bool running = 1;
 void stop(int status) {
-    world->destroyAll();
-    delete world;
+    game->destroyAll();
+    delete game;
     TTF_Quit();
     SDL_Quit();
     exit(status);
 }
 void update(double delta) {
-    world->speak();
-    world->update(delta);
-    for(int i=0; i<world->objs.size(); i++) {
-        if(!world->objs.isFree(i)) {
-            humrcraft::Object* a = world->objs[i];
+    game->speak();
+    game->update(delta);
+    for(int i=0; i<game->objs.size(); i++) {
+        if(!game->objs.isFree(i)) {
+            humrcraft::Object* a = game->objs[i];
             if(a->shape) {
-                for(int j=i+1; j<world->objs.size(); j++) {
-                    if(!world->objs.isFree(j)) {
-                        humrcraft::Object* b = world->objs[j];
+                for(int j=i+1; j<game->objs.size(); j++) {
+                    if(!game->objs.isFree(j)) {
+                        humrcraft::Object* b = game->objs[j];
                         if(b->shape) {
                             math::V2f pos1 = {(float)fmax(a->getPos().x, b->getPos().x), (float)fmax(a->getPos().y, b->getPos().y)};
                             math::V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
@@ -107,7 +107,7 @@ void update(double delta) {
 }
 void render() {
     renderer->pos = hero->getPos();
-    world->render();
+    game->render();
 }
 int main(int argc, char** argv) {
     /*int i=0;
@@ -153,11 +153,11 @@ int main(int argc, char** argv) {
     free(buff);
     file.close();
     renderer = new humrcraft::renderers::SDLGLRenderer("humrcraft 1.0", 800, 600, 2, 1);
-    world->add(renderer);
+    game->add(renderer);
     /*speaker = new Speaker();
-    world->add(speaker);*/
+    game->add(speaker);*/
     textures = new humrcraft::game::Textures();
-    world->add(textures);
+    game->add(textures);
     textures->add(IMG_Load("./gfx/humr.png"));
     textures->add(IMG_Load("./gfx/human.png"));
     textures->add(IMG_Load("./gfx/matemat0.png"));
@@ -165,10 +165,10 @@ int main(int argc, char** argv) {
     textures->add(IMG_Load("./gfx/grass.png"));
     textures->add(IMG_Load("./gfx/papaver_orientale.png"));
     textures->add(IMG_Load("./gfx/orror.png"));
-    world->add(new humrcraft::game::Tiles(textures));
+    game->add(new humrcraft::game::Tiles(textures));
     /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
     humr->pos = {0, 0};
-    world->add(humr);*/
+    game->add(humr);*/
     humrcraft::game::Thing* humanbase = new humrcraft::game::Thing(NULL, 0, [&](humrcraft::game::Thing* base, void* data, int datasize) {
         return new humrcraft::game::Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
             1, 0, (*textures)[1]);
@@ -179,10 +179,10 @@ int main(int argc, char** argv) {
     }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2]);
     humrcraft::game::Thing* human = humanbase->recreate(NULL, 0);
     human->pos = {0, 0};
-    world->add(human);
+    game->add(human);
     humrcraft::game::Thing* matemat = matematbase->recreate(NULL, 0);
     matemat->pos = {2, 2};
-    world->add(matemat);
+    game->add(matemat);
     hero = human;
     /*Polygon* polygon = new Polygon();
     std::cout<<"polygon"<<'\n';
@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
         srand(rand());
         obj->pos = {(float)(rand()%1000-500), (float)(rand()%1000-500)};
         obj->vel = {1, (float)(rand()%314/100)};
-        world->add(obj);
+        game->add(obj);
     }*/
     long lastUpdate = utils::getMS();
     double msPerUpdate = (double)1000/120;
@@ -273,12 +273,12 @@ int main(int argc, char** argv) {
                                     srand(rand());
                                     obj->pos = renderer->getPos({event.button.x, event.button.y});
                                     obj->vel = hero->getVel();
-                                    world->add(obj);
+                                    game->add(obj);
                                 }break;
                             case SDL_BUTTON_RIGHT: {
-                                    for(int i=0; i<world->objs.size(); i++) {
-                                        if(!world->objs.isFree(i)) {
-                                            humrcraft::Object* a = world->objs[i];
+                                    for(int i=0; i<game->objs.size(); i++) {
+                                        if(!game->objs.isFree(i)) {
+                                            humrcraft::Object* a = game->objs[i];
                                             math::V2f pos = renderer->getPos({event.button.x, event.button.y});
                                             math::V2f pos1 = {(float)fmax(a->getPos().x, pos.x), (float)fmax(a->getPos().y, pos.y)};
                                             math::V2f pos2 = {(float)fmin(a->getPos().x, pos.x), (float)fmin(a->getPos().y, pos.y)};
