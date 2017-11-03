@@ -32,7 +32,7 @@
 #include "math.hpp"
 #include "maze.h"
 
-//TODO: add Interface class
+//TODO: add Interface class and Keyboard class
 
 namespace humrcraft {
     class World;

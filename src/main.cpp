@@ -69,8 +69,8 @@ class BigNumber {
 humrcraft::World* world = new humrcraft::World();
 humrcraft::renderers::SDLGLRenderer* renderer;
 humrcraft::Speaker* speaker;
-Textures* textures;
-Thing* hero;
+humrcraft::game::Textures* textures;
+humrcraft::game::Thing* hero;
 float gmulti = 1;
 bool pause = 1;
 bool running = 1;
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
     world->add(renderer);
     /*speaker = new Speaker();
     world->add(speaker);*/
-    textures = new Textures();
+    textures = new humrcraft::game::Textures();
     world->add(textures);
     textures->add(IMG_Load("./gfx/humr.png"));
     textures->add(IMG_Load("./gfx/human.png"));
@@ -165,22 +165,22 @@ int main(int argc, char** argv) {
     textures->add(IMG_Load("./gfx/grass.png"));
     textures->add(IMG_Load("./gfx/papaver_orientale.png"));
     textures->add(IMG_Load("./gfx/orror.png"));
-    world->add(new Tiles(textures));
+    world->add(new humrcraft::game::Tiles(textures));
     /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
     humr->pos = {0, 0};
     world->add(humr);*/
-    Thing* humanbase = new Thing(NULL, 0, [&](Thing* base, void* data, int datasize) {
-        return new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
+    humrcraft::game::Thing* humanbase = new humrcraft::game::Thing(NULL, 0, [&](humrcraft::game::Thing* base, void* data, int datasize) {
+        return new humrcraft::game::Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
             1, 0, (*textures)[1]);
     }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, (*textures)[1]);
-    Thing* matematbase = new Thing(NULL, 0, [&](Thing* base, void* data, int datasize) {
-        return new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}),
+    humrcraft::game::Thing* matematbase = new humrcraft::game::Thing(NULL, 0, [&](humrcraft::game::Thing* base, void* data, int datasize) {
+        return new humrcraft::game::Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}),
             1, 0, (*textures)[2]);
     }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2]);
-    Thing* human = humanbase->recreate(NULL, 0);
+    humrcraft::game::Thing* human = humanbase->recreate(NULL, 0);
     human->pos = {0, 0};
     world->add(human);
-    Thing* matemat = matematbase->recreate(NULL, 0);
+    humrcraft::game::Thing* matemat = matematbase->recreate(NULL, 0);
     matemat->pos = {2, 2};
     world->add(matemat);
     hero = human;
