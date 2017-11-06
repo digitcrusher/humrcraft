@@ -43,6 +43,7 @@ namespace humrcraft {
                 float maxhealth;
                 float health;
                 float damage;
+                char* name;
                 GLuint textureid;
                 Thing *head, *rhand, *lhand, *chest, *back, *legs, *feet;
                 void* data;
@@ -68,7 +69,7 @@ namespace humrcraft {
                 virtual void action(const char* action);
                 virtual void collisionCallback(struct manifold* manifold);
         };
-        class Game : public World {
+        class Game : public World { //TODO: add a spritesheet
             public:
                 utils::List<Thing*> things;
                 Game() {

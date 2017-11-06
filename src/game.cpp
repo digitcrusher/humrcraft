@@ -182,7 +182,7 @@ namespace humrcraft {
             this->textures = textures;
             for(int x=0; x<this->sizex; x++) {
                 for(int y=0; y<this->sizey; y++) {
-                    this->tiles[this->sizex*y+x] = 3;
+                    this->tiles[this->sizex*y+x] = rand()%2?4:7;
                 }
             }
         }

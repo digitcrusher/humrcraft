@@ -27,6 +27,7 @@
 #define UTILS_HPP
 #include <stdlib.h>
 #include <string.h>
+#include <exception>
 
 //TODO: add a sorting algorithm
 
@@ -40,7 +41,7 @@ namespace utils {
     void setLoopTimer(struct timer* timer, bool loopover, double looplength);
     double getElapsedTimer(struct timer timer);
 
-    template<typename T> class Vector {
+    template<typename T> class Vector { //TODO: add more functions
         private:
             int vsize;
             int vcapacity;
@@ -49,12 +50,12 @@ namespace utils {
         public:
             Vector();
             virtual ~Vector();
-            virtual bool pushBack(T t);
-            virtual bool popBack(T* t);
-            virtual bool replace(int element, T t);
-            virtual bool resize(int newsize);
+            virtual void pushBack(T t);
+            virtual void popBack(T* t);
+            virtual void replace(int element, T t);
+            virtual void resize(int newsize);
             virtual T* getP(int element);
-            virtual bool clear();
+            virtual void clear();
             virtual T* getArray();
             virtual int size();
             virtual int capacity();
@@ -69,45 +70,43 @@ namespace utils {
     template<typename T> Vector<T>::~Vector() {
         free(this->array);
     }
-    template<typename T> bool Vector<T>::pushBack(T t) {
+    template<typename T> void Vector<T>::pushBack(T t) {
         if(this->vsize >= this->vcapacity) {
-            if(this->resize(this->vsize+1)) {
-                return 1;
+            try {
+                this->resize(this->vsize+1);
+            }catch(std::exception e) {
+                throw e;
             }
         }
         this->array[this->vsize++] = t;
-        return 0;
     }
-    template<typename T> bool Vector<T>::popBack(T* t) {
+    template<typename T> void Vector<T>::popBack(T* t) {
         *t = this->array[--this->vsize];
         return this->resize(this->vsize+1);
     }
-    template<typename T> bool Vector<T>::replace(int element, T t) {
+    template<typename T> void Vector<T>::replace(int element, T t) {
         if(element > this->vsize-1) {
-            return 1;
+            throw "Invalid element";
         }
         this->array[element] = t;
-        return 0;
     }
-    template<typename T> bool Vector<T>::resize(int newsize) {
+    template<typename T> void Vector<T>::resize(int newsize) {
         if(newsize > this->maxsize) {
-            return 1;
+            throw "Invalid size";
         }
         this->vcapacity = newsize;
         this->array = (T*)realloc(this->array, sizeof(T)*this->vcapacity);
-        return 0;
     }
     template<typename T> T* Vector<T>::getP(int element) {
         if(element > this->vsize-1) {
-            return NULL;
+            throw "Invalid element";
         }
         return this->array+element;
     }
-    template<typename T> bool Vector<T>::clear() {
+    template<typename T> void Vector<T>::clear() {
         this->vsize=0;
         this->vcapacity=this->vsize+1;
         this->resize(this->vcapacity);
-        return 0;
     }
     template<typename T> T* Vector<T>::getArray() {
         return this->array;
@@ -143,7 +142,7 @@ namespace utils {
             virtual int capacity();
             virtual struct ListElem<T>* getArray();
             virtual int add(T elem);
-            virtual bool remove(int x);
+            virtual void remove(int x);
             virtual bool isFree(int x);
             virtual T* get(int x);
             virtual T operator[](const int& rvalue);
@@ -173,12 +172,11 @@ namespace utils {
         this->elems.pushBack({elem, 0});
         return this->elems.size()-1;
     }
-    template<typename T> bool List<T>::remove(int x) {
+    template<typename T> void List<T>::remove(int x) {
         if(x >= 0 && x < this->elems.size()) {
             this->elems.getArray()[x].free = 1;
-            return 0;
         }
-        return 1;
+        throw;
     }
     template<typename T> bool List<T>::isFree(int x) {
         if(x >= 0 && x < this->elems.size()) {
@@ -190,7 +188,7 @@ namespace utils {
         if(x >= 0 && x < this->elems.size()) {
             return &this->elems.getArray()[x].elem;
         }
-        return NULL;
+        throw;
     }
     template<typename T> T List<T>::operator[](const int& rvalue) {
         return *this->get(rvalue);
