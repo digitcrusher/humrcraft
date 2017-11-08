@@ -82,8 +82,9 @@ void stop(int status) {
     exit(status);
 }
 void update(double delta) {
-    game->speak();
     game->update(delta);
+    game->speak();
+    game->interface();
     for(int i=0; i<game->objs.size(); i++) {
         if(!game->objs.isFree(i)) {
             humrcraft::Object* a = game->objs[i];
@@ -92,10 +93,8 @@ void update(double delta) {
                     if(!game->objs.isFree(j)) {
                         humrcraft::Object* b = game->objs[j];
                         if(b->shape) {
-                            math::V2f pos1 = {(float)fmax(a->getPos().x, b->getPos().x), (float)fmax(a->getPos().y, b->getPos().y)};
-                            math::V2f pos2 = {(float)fmin(a->getPos().x, b->getPos().x), (float)fmin(a->getPos().y, b->getPos().y)};
                             float force = (6.674*10/pow(10, 11))/((1/a->shape->getInvMass())*(1/b->shape->getInvMass())/
-                                          pow(sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2)), 2));
+                                          pow(math::distance(a->getPos(), b->getPos()), 2));
                             a->applyImpulse((math::V2f){gmulti*force*(float)delta, 0}+fatp(a->getPos(), b->getPos()));
                             b->applyImpulse((math::V2f){gmulti*force*(float)delta, 0}+fatp(b->getPos(), b->getPos()));
                         }
@@ -110,31 +109,10 @@ void render() {
     game->render();
 }
 int main(int argc, char** argv) {
-    /*int primes[50];
-    primes[0] = 1;
-    for(int i=1, num=2; i<50; num++) {
-        int div=2;
-        for(; div<num; div++) {
-            if((float)num/div==num/div) {
-                break;
-            }
-        }
-        if(div == num) {
-            primes[i] = num;
-            i++;
-        }
-    }
-    for(int i=2; i<50; i++) {
-        std::cout<<primes[i]<<": ";
-        int j=primes[i];
-        for(int k=i-1; k>=0 && j; k--) {
-            if(j>=primes[k]) {
-                j-=primes[k];
-                std::cout<<primes[k]<<", ";
-            }
-        }
-        std::cout<<'\n';
-    }*/
+    std::cout<<"humrcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
+    std::cout<<"This program comes with ABSOLUTELY NO WARRANTY.\n";
+    std::cout<<"This is free software, and you are welcome to redistribute it\n";
+    std::cout<<"under certain conditions.\n";
     /*int i=0;
     int bignum=0;
     int bigdiv=0;
@@ -158,13 +136,30 @@ int main(int argc, char** argv) {
         i++;
     }
     std::cout<<"#"<<bignum<<": "<<bigdiv<<"\n";*/
-    std::cout<<"humrcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
-    std::cout<<"This program comes with ABSOLUTELY NO WARRANTY.\n";
-    std::cout<<"This is free software, and you are welcome to redistribute it\n";
-    std::cout<<"under certain conditions.\n";
-    if(SDL_Init(SDL_INIT_EVERYTHING)) {
-        std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
-        stop(1);
+    int primes[50];
+    primes[0] = 1;
+    for(int i=1, num=2; i<50; num++) {
+        int div=2;
+        for(; div<num; div++) {
+            if((float)num/div==num/div) {
+                break;
+            }
+        }
+        if(div == num) {
+            primes[i] = num;
+            i++;
+        }
+    }
+    for(int i=2; i<50; i++) {
+        std::cout<<primes[i]<<": ";
+        int j=primes[i];
+        for(int k=i-1; k>=0 && j; k--) {
+            if(j>=primes[k]) {
+                j-=primes[k];
+                std::cout<<primes[k]<<", ";
+            }
+        }
+        std::cout<<'\n';
     }
     CIPL::Scope scope;
     std::ifstream file("cfg.cipl");
@@ -177,12 +172,17 @@ int main(int argc, char** argv) {
     scope.execute(buff);
     free(buff);
     file.close();
+    if(SDL_Init(SDL_INIT_EVERYTHING)) {
+        std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
+        stop(1);
+    }
     renderer = new humrcraft::renderers::SDLGLRenderer("humrcraft 1.0", 800, 600, 2, 1);
     game->add(renderer);
     /*speaker = new Speaker();
     game->add(speaker);*/
     textures = new humrcraft::game::Textures();
     game->add(textures);
+    SDL_Surface* texturesheet = IMG_Load("./gfx/texturesheet.png");
     textures->add(IMG_Load("./gfx/humr.png"));
     textures->add(IMG_Load("./gfx/human.png"));
     textures->add(IMG_Load("./gfx/matemat0.png"));
@@ -191,6 +191,7 @@ int main(int argc, char** argv) {
     textures->add(IMG_Load("./gfx/papaver_orientale.png"));
     textures->add(IMG_Load("./gfx/orror.png"));
     textures->add(IMG_Load("./gfx/water.png"));
+    SDL_FreeSurface(texturesheet);
     humrcraft::game::Tiles* background = new humrcraft::game::Tiles(textures);
     //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(textures);
     game->add(background);

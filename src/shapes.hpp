@@ -88,7 +88,7 @@ namespace humrcraft {
                 }
                 virtual void render(Renderer* renderer) {
                     Shape::render(renderer);
-                    if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+                    if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
                     for(float i=0; i<math::pi*2; i+=math::pi/4/(math::pi*2*4)) {
                         graphics::drawPixel(((humrcraft::renderers::SDLRenderer*)renderer)->buffer, ((humrcraft::renderers::SDLRenderer*)renderer)->SDLMapPos(this->getPos()).x+sin(i)*this->getRadius({0, i}).x, ((humrcraft::renderers::SDLRenderer*)renderer)->SDLMapPos(this->getPos()).y+cos(i)*this->getRadius({0, i}).x, (int)-1);
                     }

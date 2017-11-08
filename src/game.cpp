@@ -77,7 +77,7 @@ namespace humrcraft {
         }
         void Thing::render(Renderer* renderer) {
             Object::render(renderer);
-            if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
+            if(!this->checkFamily(renderer, "SDLGLRenderer", 3)) return;
             if(this->textureid) {
                 glBindTexture(GL_TEXTURE_2D, this->textureid);
                 glEnable(GL_TEXTURE_2D);
@@ -145,6 +145,20 @@ namespace humrcraft {
             }
         }
 
+        Game::Game() {
+        }
+        Game::~Game() {
+        }
+        int Game::addThing(Thing* thing) {
+            if(thing) {
+                return this->things.add(thing);
+            }
+            return -1;
+        }
+        Thing* Game::createThing(int x, void* data, int datasize) {
+            return (*this->things.get(x))->recreate(data, datasize);
+        }
+
         Textures::Textures() : Object(NULL) {
         }
          Textures::~Textures() {
@@ -195,7 +209,7 @@ namespace humrcraft {
         }
          void Tiles::render(Renderer* renderer) {
             Object::render(renderer);
-            if(!this->checkFamily(renderer, "SDLGLRenderer", 2)) return;
+            if(!this->checkFamily(renderer, "SDLGLRenderer", 3)) return;
             /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
                 srand(::time(NULL));
                 resetWorld(world, {Wall, 0});

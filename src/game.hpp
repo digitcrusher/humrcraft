@@ -26,6 +26,7 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 #include <stdlib.h>
+#include <SDL2/SDL_image.h>
 #include "world.hpp"
 #include "maze.h"
 
@@ -38,7 +39,7 @@ namespace humrcraft {
         class Gun;
         class Projectile;
 
-        class Thing : public Object { //TODO: add model struct //TODO: add recreate function
+        class Thing : public Object { //TODO: add model struct //TODO: add movement functions
             public:
                 float maxhealth;
                 float health;
@@ -69,25 +70,26 @@ namespace humrcraft {
                 virtual void action(const char* action);
                 virtual void collisionCallback(struct manifold* manifold);
         };
-        class Game : public World { //TODO: add a spritesheet
+        class Game : public World {
             public:
                 utils::List<Thing*> things;
-                Game() {
-                }
-                virtual ~Game() {
-                }
-                virtual int addThing(Thing* thing) {
-                    if(thing) {
-                        return this->things.add(thing);
-                    }
-                    return -1;
-                }
-                virtual Thing* createThing(int x, void* data, int datasize) {
-                    return (*this->things.get(x))->recreate(data, datasize);
-                }
+                Game();
+                virtual ~Game();
+                virtual int addThing(Thing* thing);
+                virtual Thing* createThing(int x, void* data, int datasize);
         };
         class Textures : public Object {
             public:
+                /*struct texturesheet {
+                    SDL_Surface* texturesheet;
+                };
+                struct texturesheet* createTextureSheet(const char* filename) {
+                    struct texturesheet* texturesheet = (struct texturesheet*)malloc(sizeof(texturesheet));
+
+                    return texturesheet;
+                }
+                SDL_Surface* getTexture(struct texturesheet* texturesheet) {
+                }*/
                 utils::Vector<GLuint> textures;
                 Textures();
                 virtual ~Textures();

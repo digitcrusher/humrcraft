@@ -71,6 +71,11 @@ namespace humrcraft {
     //        this->vspd *= 1-this->world->friction*this->getInvMass()*delta;
     //    }
     }
+    void Object::interface(Interface* interface) {
+        if(this->shape) {
+            this->shape->interface(interface);
+        }
+    }
     void Object::render(Renderer* renderer) {
         if(this->shape) {
             this->shape->render(renderer);
@@ -166,10 +171,27 @@ namespace humrcraft {
         }
         this->time += delta;
     }
+    void World::interface() {
+        Interface* interface;
+        int offset = 0;
+        while((interface = (Interface*)this->getObject("Interface", 1, offset))) {
+            if(this->checkFamily(interface, "Renderer", 2) || this->checkFamily(interface, "Speaker", 2)) {
+                continue;
+            }
+            interface->begin();
+            for(int i=0; i<this->objs.size(); i++) {
+                if(!this->objs.isFree(i)) {
+                    this->objs[i]->interface(interface);
+                }
+            }
+            interface->end();
+            offset = interface->id+1;
+        }
+    }
     void World::render() {
         Renderer* renderer;
         int offset = 0;
-        while((renderer = (Renderer*)this->getObject("Renderer", 1, offset))) {
+        while((renderer = (Renderer*)this->getObject("Renderer", 2, offset))) {
             renderer->begin();
             for(int i=0; i<this->objs.size(); i++) {
                 if(!this->objs.isFree(i)) {
@@ -183,7 +205,7 @@ namespace humrcraft {
     void World::speak() {
         Speaker* speaker;
         int offset = 0;
-        while((speaker = (Speaker*)this->getObject("Speaker", 1, offset))) {
+        while((speaker = (Speaker*)this->getObject("Speaker", 2, offset))) {
             speaker->begin();
             for(int i=0; i<this->objs.size(); i++) {
                 if(!this->objs.isFree(i)) {
@@ -281,6 +303,9 @@ namespace humrcraft {
     void Shape::update(double delta) {
         Object::update(delta);
     }
+    void Shape::interface(Interface* interface) {
+        Object::interface(interface);
+    }
     void Shape::render(Renderer* renderer) {
         Object::render(renderer);
     }
@@ -334,7 +359,21 @@ namespace humrcraft {
         return *this;
     }
 
-    Renderer::Renderer() : Object(NULL) {
+    Interface::Interface() : Object(NULL) {
+        this->family.pushBack("Interface");
+    }
+    Interface::~Interface() {
+    }
+    void Interface::begin() {
+    }
+    void Interface::end() {
+    }
+    Interface& Interface::operator=(const Interface& rvalue) {
+        Object::operator=(rvalue);
+        return *this;
+    }
+
+    Renderer::Renderer() : Interface() {
         this->family.pushBack("Renderer");
     }
     Renderer::~Renderer() {
@@ -348,7 +387,7 @@ namespace humrcraft {
         return *this;
     }
 
-    Speaker::Speaker() : Object(NULL) {
+    Speaker::Speaker() : Interface() {
         this->family.pushBack("Speaker");
         SDL_AudioSpec wanted;
         memset(&wanted, 0, sizeof(wanted));

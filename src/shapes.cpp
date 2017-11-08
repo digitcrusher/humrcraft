@@ -46,7 +46,7 @@ namespace humrcraft {
         }
         void Circle::render(Renderer* renderer) {
             Shape::render(renderer);
-            if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
             ((humrcraft::renderers::SDLRenderer*)renderer)->drawCircle(this->getPos(), this->radius, ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
             ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(this->getOri()).x,
                 this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(this->getOri()).x},
@@ -78,7 +78,7 @@ namespace humrcraft {
         }
         void Square::render(Renderer* renderer) {
             Shape::render(renderer);
-            if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
             ((humrcraft::renderers::SDLRenderer*)renderer)->drawSquare(this->getPos(), this->getOri(), this->sidelen, ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
             ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
                 this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
@@ -93,7 +93,7 @@ namespace humrcraft {
         math::V2f Square::getNormal(math::V2f angle) {
             return {0, angle.y};
         }
-        
+
         Rectangle::Rectangle(math::V2fPair rectangle) : Shape() {
             this->family.pushBack("Rectangle");
             this->rectangle = rectangle;
@@ -110,7 +110,7 @@ namespace humrcraft {
         }
         void Rectangle::render(Renderer* renderer) {
             Shape::render(renderer);
-            if(!this->checkFamily(renderer, "SDLRenderer", 2)) return;
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
             ((humrcraft::renderers::SDLRenderer*)renderer)->drawLine(this->getPos(), {this->getPos().x+(float)cos(this->getOri().y)*this->getRadius(-this->getOri()).x,
                 this->getPos().y+(float)sin(this->getOri().y)*this->getRadius(-this->getOri()).x},
                 ((humrcraft::renderers::SDLRenderer*)renderer)->mapRGBA(this->r, this->g, this->b, this->a));
@@ -152,10 +152,7 @@ namespace humrcraft {
                 return 1;
             }
             manifold->ra = manifold->a->shape->getRadius(manifold->angle);
-            manifold->rb = manifold->b->shape->getRadius(manifold->angle+(math::V2f){0, (float)math::pi});
-            math::V2f pos1 = {(float)fmax(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmax(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
-            math::V2f pos2 = {(float)fmin(manifold->a->shape->getPos().x, manifold->b->shape->getPos().x), (float)fmin(manifold->a->shape->getPos().y, manifold->b->shape->getPos().y)};
-            manifold->penetration = manifold->ra.x+manifold->rb.x-sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
+            manifold->penetration = manifold->ra.x+manifold->rb.x-math::distance(manifold->a->shape->getPos(), manifold->b->shape->getPos());
             return 0;
         }
         bool rectangleRectangle(struct manifold* manifold, World* world) {

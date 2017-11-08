@@ -147,6 +147,9 @@ namespace math {
         float c = low;
         return a*pow(x, 2)+c;
     }
+    float distance(V2f pos1, V2f pos2) {
+        return sqrt(pow(pos1.x-pos2.x, 2)+pow(pos1.y-pos2.y, 2));
+    }
     V2f carteToPolar(V2f carte) {
         return {(float)sqrt(pow(carte.x, 2)+pow(carte.y, 2)), fatp({0, 0}, carte).y};
     }
@@ -261,7 +264,7 @@ namespace math {
     }
     V2f fatp(V2f p1, V2f p2) { //float angle to point
         return {0, (float)atan2(p2.y-p1.y, p2.x-p1.x)};
-
+        /*
         float quarter=0,a,b,angle;
         if(p1 == p2) {
             return {0, 0};
@@ -283,5 +286,6 @@ namespace math {
         angle = asin(b/sqrt(pow(b,2)+pow(a,2)));
         angle = (((math::pi/2)+(math::pi/2)*quarter-angle)*!(floor(quarter/2)==quarter/2))+((angle+(math::pi/2)*quarter)*(floor(quarter/2)==quarter/2));
         return {0, angle};
+        */
     }
 }

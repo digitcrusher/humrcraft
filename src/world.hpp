@@ -38,6 +38,7 @@ namespace humrcraft {
     class World;
     class Object;
     class Shape;
+    class Interface;
     class Renderer;
     class Speaker;
 
@@ -86,6 +87,7 @@ namespace humrcraft {
             Object(Shape* shape, bool shared, bool stationary);
             virtual ~Object();
             virtual void update(double delta);
+            virtual void interface(Interface* interface);
             virtual void render(Renderer* renderer);
             virtual void speak(Speaker* speaker);
             virtual math::V2f getPos();
@@ -110,6 +112,7 @@ namespace humrcraft {
             World();
             virtual ~World();
             virtual void update(double delta);
+            virtual void interface();
             virtual void render();
             virtual void speak();
             virtual int add(Object* obj);
@@ -132,6 +135,7 @@ namespace humrcraft {
             Shape(struct material material, int r, int g, int b, int a);
             virtual ~Shape();
             virtual void update(double delta);
+            virtual void interface(Interface* interface);
             virtual void render(Renderer* renderer);
             virtual void speak(Speaker* speaker);
             virtual math::V2f getPos();
@@ -148,7 +152,15 @@ namespace humrcraft {
             virtual math::V2f getNormal(math::V2f angle);
             virtual Shape& operator=(const Shape& rvalue);
     };
-    class Renderer : public Object { //TODO: add shaders
+    class Interface : public Object {
+        public:
+            Interface();
+            virtual ~Interface();
+            virtual void begin();
+            virtual void end();
+            virtual Interface& operator=(const Interface& rvalue);
+    };
+    class Renderer : public Interface { //TODO: add shaders
         public:
             Renderer();
             virtual ~Renderer();
@@ -156,7 +168,7 @@ namespace humrcraft {
             virtual void end();
             virtual Renderer& operator=(const Renderer& rvalue);
     };
-    class Speaker : public Object { //TODO: add sound shaders
+    class Speaker : public Interface { //TODO: add sound shaders
         public:
             SDL_AudioSpec spec;
             SDL_AudioDeviceID device;

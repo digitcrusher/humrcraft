@@ -27,8 +27,6 @@
 #define MATH_HPP
 #include <math.h>
 
-//TODO: add a function which calculates the distance betweem 2 points
-
 namespace math {
     const double pi=3.14159265358979323846;
 
@@ -107,13 +105,14 @@ namespace math {
 
     float trianglewave(float i);
     float squarer(float angle, float sidelen);
+    float distance(V2f pos1, V2f pos2);
     V2f carteToPolar(V2f carte);
     V2f polarToCarte(V2f polar);
     bool squareInSquare(V2fPair sqr1, V2fPair sqr2);
     bool squareInSquareCart(V2fPair sqr1, V2fPair sqr2); //square in square cartesian
     bool fpil(V2fPair line, V2f point); //float point in line
     bool fpilu(V2fPair line, V2f point, float unprec); //float point in line with unprecision
-    V2f fatp(V2f p1, V2f p2); //float angle to point //TODO: make this faster
+    V2f fatp(V2f p1, V2f p2); //float angle to point
 }
 
 #endif
