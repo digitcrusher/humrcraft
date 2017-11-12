@@ -169,7 +169,6 @@ namespace humrcraft {
                 }
             }
         }
-        this->time += delta;
     }
     void World::interface() {
         Interface* interface;

@@ -42,6 +42,7 @@
 #include "graphics.hpp"
 #include "game.hpp"
 #include "language.hpp"
+#include "wad.h"
 
 class BigNumber {
     utils::Vector<char> data;
@@ -69,7 +70,7 @@ class BigNumber {
 humrcraft::game::Game* game = new humrcraft::game::Game();
 humrcraft::renderers::SDLGLRenderer* renderer;
 humrcraft::Speaker* speaker;
-humrcraft::game::Textures* textures;
+humrcraft::game::Resources* resources;
 humrcraft::game::Thing* hero;
 float gmulti = 1;
 bool pause = 1;
@@ -136,9 +137,9 @@ int main(int argc, char** argv) {
         i++;
     }
     std::cout<<"#"<<bignum<<": "<<bigdiv<<"\n";*/
-    int primes[50];
+    /*int primes[4096];
     primes[0] = 1;
-    for(int i=1, num=2; i<50; num++) {
+    for(int i=1, num=2; i<4096; num++) {
         int div=2;
         for(; div<num; div++) {
             if((float)num/div==num/div) {
@@ -150,7 +151,7 @@ int main(int argc, char** argv) {
             i++;
         }
     }
-    for(int i=2; i<50; i++) {
+    for(int i=2; i<4096; i++) {
         std::cout<<primes[i]<<": ";
         int j=primes[i];
         for(int k=i-1; k>=0 && j; k--) {
@@ -160,18 +161,20 @@ int main(int argc, char** argv) {
             }
         }
         std::cout<<'\n';
+    }*/
+    {
+        CIPL::Scope scope;
+        std::ifstream file("cfg.cipl");
+        file.seekg(0, file.end);
+        int size = file.tellg();
+        file.seekg(0, file.beg);
+        char* buff = (char*)malloc(sizeof(char)*(size+1));
+        file.readsome(buff, size);
+        buff[size] = '\0';
+        scope.execute(buff);
+        free(buff);
+        file.close();
     }
-    CIPL::Scope scope;
-    std::ifstream file("cfg.cipl");
-    file.seekg(0, file.end);
-    int size = file.tellg();
-    file.seekg(0, file.beg);
-    char* buff = (char*)malloc(sizeof(char)*(size+1));
-    file.readsome(buff, size);
-    buff[size] = '\0';
-    scope.execute(buff);
-    free(buff);
-    file.close();
     if(SDL_Init(SDL_INIT_EVERYTHING)) {
         std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
         stop(1);
@@ -180,20 +183,18 @@ int main(int argc, char** argv) {
     game->add(renderer);
     /*speaker = new Speaker();
     game->add(speaker);*/
-    textures = new humrcraft::game::Textures();
-    game->add(textures);
-    SDL_Surface* texturesheet = IMG_Load("./gfx/texturesheet.png");
-    textures->add(IMG_Load("./gfx/humr.png"));
-    textures->add(IMG_Load("./gfx/human.png"));
-    textures->add(IMG_Load("./gfx/matemat0.png"));
-    textures->add(IMG_Load("./gfx/bricks.png"));
-    textures->add(IMG_Load("./gfx/grass.png"));
-    textures->add(IMG_Load("./gfx/papaver_orientale.png"));
-    textures->add(IMG_Load("./gfx/orror.png"));
-    textures->add(IMG_Load("./gfx/water.png"));
-    SDL_FreeSurface(texturesheet);
-    humrcraft::game::Tiles* background = new humrcraft::game::Tiles(textures);
-    //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(textures);
+    resources = new humrcraft::game::Resources();
+    game->add(resources);
+    resources->addTexture(IMG_Load("./gfx/humr.png"));
+    resources->addTexture(IMG_Load("./gfx/human.png"));
+    resources->addTexture(IMG_Load("./gfx/matemat0.png"));
+    resources->addTexture(IMG_Load("./gfx/bricks.png"));
+    resources->addTexture(IMG_Load("./gfx/grass.png"));
+    resources->addTexture(IMG_Load("./gfx/papaver_orientale.png"));
+    resources->addTexture(IMG_Load("./gfx/orror.png"));
+    resources->addTexture(IMG_Load("./gfx/water.png"));
+    humrcraft::game::Tiles* background = new humrcraft::game::Tiles(resources);
+    //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(resources);
     game->add(background);
     //game->add(foreground);
     /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
@@ -201,12 +202,12 @@ int main(int argc, char** argv) {
     game->add(humr);*/
     game->addThing(new humrcraft::game::Thing(NULL, 0, [&](humrcraft::game::Thing* base, void* data, int datasize) {
         return new humrcraft::game::Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
-            1, 0, (*textures)[1]);
-    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, (*textures)[1])); //Human
+            1, 0, resources->getTexture(1));
+    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}), 1, 0, resources->getTexture(1))); //Human
     game->addThing(new humrcraft::game::Thing(NULL, 0, [&](humrcraft::game::Thing* base, void* data, int datasize) {
         return new humrcraft::game::Thing(data, datasize, base->recreatef, base->initf, base->uninitf, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}),
-            1, 0, (*textures)[2]);
-    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, (*textures)[2])); //Matemat
+            1, 0, resources->getTexture(2));
+    }, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}), 1, 0, resources->getTexture(2))); //Matemat
     humrcraft::game::Thing* human = game->createThing(0, NULL, 0);
     human->pos = {0, 0};
     game->add(human);

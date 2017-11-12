@@ -159,12 +159,12 @@ namespace humrcraft {
             return (*this->things.get(x))->recreate(data, datasize);
         }
 
-        Textures::Textures() : Object(NULL) {
+        Resources::Resources() : Object(NULL) {
         }
-         Textures::~Textures() {
-            glDeleteTextures(textures.size(), textures.getArray());
+        Resources::~Resources() {
+            glDeleteTextures(this->textures.size(), this->textures.getArray());
         }
-         void Textures::add(SDL_Surface* surface) {
+        void Resources::addTexture(SDL_Surface* surface) {
             GLuint id=0;
             glGenTextures(1, &id);
             glBindTexture(GL_TEXTURE_2D, id);
@@ -177,14 +177,14 @@ namespace humrcraft {
             this->textures.pushBack(id);
             SDL_FreeSurface(surface);
         }
-         GLuint& Textures::operator[](unsigned int n) {
+        GLuint Resources::getTexture(int n) {
             return this->textures[n];
         }
 
-        Tiles::Tiles(Textures* textures) : Object(NULL) {
+        Tiles::Tiles(Resources* resources) : Object(NULL) {
             sizex = 50;
             sizey = 50;
-            tiles = (unsigned int*)malloc(sizeof(unsigned int)*this->sizex*this->sizey);
+            tiles = (int*)malloc(sizeof(int)*this->sizex*this->sizey);
             /*world = createWorld(this->sizex, this->sizey);
             srand(::time(NULL));
             resetWorld(world, {Wall, 0});
@@ -193,7 +193,7 @@ namespace humrcraft {
             y = 0;
             heading = 0;
             last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*/
-            this->textures = textures;
+            this->resources = resources;
             for(int x=0; x<this->sizex; x++) {
                 for(int y=0; y<this->sizey; y++) {
                     this->tiles[this->sizex*y+x] = rand()%2?4:7;
@@ -244,7 +244,7 @@ namespace humrcraft {
                     math::V2f end = ((renderers::SDLGLRenderer*)renderer)->GLGetPos({1, -1});
                     for(int y=fmax(this->sizey-start.y-(float)this->sizey/2, 0); y<fmin(this->sizey-end.y-(float)this->sizey/2, this->sizey); y++) {
                         for(int x=fmax(start.x+(float)this->sizex/2, 0); x<fmin(end.x+(float)this->sizex/2, this->sizex); x++) {
-                            glBindTexture(GL_TEXTURE_2D, (*textures)[this->tiles[this->sizex*y+x]]);
+                            glBindTexture(GL_TEXTURE_2D, resources->getTexture(this->tiles[this->sizex*y+x]));
                             glBegin(GL_TRIANGLES);
                                 math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
                                 glTexCoord2f(0, 1);

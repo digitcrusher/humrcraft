@@ -359,7 +359,7 @@ namespace CIPL {
                 type.opts = opts;
                 type.type = 1;
                 Variable* var = new Variable(type, "");
-                *(void**)var->data = rvalue->get()->data;
+                *(int*)var->data = *(int*)rvalue->get()->data;
                 return var;
             }
             return (Variable*)NULL;

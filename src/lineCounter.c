@@ -2,7 +2,6 @@
  * digitcrusher's Public License
  *
  * lineCounter - a CLI software used for counting lines in files located in a directory
- * usage: lineCounter <dirpath>
  *
  * Copyright (C) 2017 Karol "digitcrusher" Łacina
  *

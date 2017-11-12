@@ -114,7 +114,6 @@ void KL_swrite(KL_terminal* term, const char* str);
 char* KL_sread(KL_terminal* term); //Blocks until enter AKA '\n' is pressed.
 void KL_cwrite(KL_terminal* term, char chr);
 char KL_cread(KL_terminal* term); //Blocks until key is pressed.
-void KL_swritef(KL_terminal* term, char* str, ...);
 void KL_flush(KL_terminal* term, bool buff);
 bool KL_kbhit(KL_terminal* term);
 void KL_gotoxy(KL_terminal* term, int x, int y);

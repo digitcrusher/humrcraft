@@ -78,7 +78,7 @@ namespace humrcraft {
                 virtual int addThing(Thing* thing);
                 virtual Thing* createThing(int x, void* data, int datasize);
         };
-        class Textures : public Object {
+        class Resources : public Object { //TODO: implement wads
             public:
                 /*struct texturesheet {
                     SDL_Surface* texturesheet;
@@ -91,21 +91,23 @@ namespace humrcraft {
                 SDL_Surface* getTexture(struct texturesheet* texturesheet) {
                 }*/
                 utils::Vector<GLuint> textures;
-                Textures();
-                virtual ~Textures();
-                virtual void add(SDL_Surface* surface);
-                virtual GLuint& operator[](unsigned int n);
+                Resources();
+                virtual ~Resources();
+                virtual void addTexture(SDL_Surface* surface);
+                virtual GLuint getTexture(int n);
+                virtual void loadResourcePack(const char* filename) {
+                }
         };
         class Tiles : public Object {
             public:
                 int sizex;
                 int sizey;
-                unsigned int* tiles;
-                Textures* textures;
+                int* tiles;
+                Resources* resources;
                 struct world* world;
                 int x, y, heading;
                 struct lfr last;
-                Tiles(Textures* textures);
+                Tiles(Resources* resources);
                 virtual ~Tiles();
                 virtual void update(double delta);
                 virtual void render(Renderer* renderer);
