@@ -144,12 +144,23 @@ namespace humrcraft {
                 this->collisionCallbackf(this, manifold);
             }
         }
+        Thing* Thing::defaultRecreatef(Thing* base, void* data, int datasize) {
+            Thing* thing = new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, base->shape, base->health, base->damage, base->textureid);
+            thing->updatef = base->updatef;
+            thing->renderf = base->renderf;
+            thing->speakf = base->speakf;
+            thing->usef = base->usef;
+            thing->attackf = base->attackf;
+            thing->actionf = base->actionf;
+            thing->collisionCallbackf = base->collisionCallbackf;
+            return thing;
+        }
 
         Game::Game() {
         }
         Game::~Game() {
         }
-        int Game::addThing(Thing* thing) {
+        int Game::registerThing(Thing* thing) {
             if(thing) {
                 return this->things.add(thing);
             }

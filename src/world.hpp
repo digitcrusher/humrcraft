@@ -32,6 +32,7 @@
 #include "math.hpp"
 #include "maze.h"
 
+//TODO: make this into a library
 //TODO: add Interface class and Keyboard class
 
 namespace humrcraft {

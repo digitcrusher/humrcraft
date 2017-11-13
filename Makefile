@@ -23,10 +23,10 @@
 # SOFTWARE.
 SD=./src
 BD=./build
-CC=gcc #i686-w64-mingw32-gcc
+CC=gcc#i686-w64-mingw32-gcc
 CCFLAGS=-Wall -Wextra -Wpedantic -ggdb -O0
-CXX=g++ #i686-w64-mingw32-g++
-CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0 -I. #-I./mingw32/SDL2/i686-w64-mingw32/include
+CXX=g++#i686-w64-mingw32-g++
+CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0#-I./mingw32/SDL2/i686-w64-mingw32/include
 LD=$(CXX)
 #For linux:
 LDFLAGS=
@@ -37,8 +37,8 @@ LDLIBS=-L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 
 all: clean humrcraft
 
-humrcraft: brainfuck.o game.o graphics.o gui.o language.o main.o math.o maze.o module.o nbp.o procedural.o renderers.o shapes.o utils.o world.o
-	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
+humrcraft: brainfuck.o game.o graphics.o gui.o language.o main.o math.o maze.o module.o nbp.o procedural.o renderers.o shapes.o terminal.o utils.o wad.o world.o
+	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
 
 brainfuck.o:
 	$(CC) $(CCFLAGS) $(SD)/brainfuck.c -c -o $(BD)/brainfuck.o
@@ -79,11 +79,17 @@ renderers.o:
 shapes.o:
 	$(CXX) $(CXXFLAGS) $(SD)/shapes.cpp -c -o $(BD)/shapes.o
 
+terminal.o:
+	$(CXX) $(CXXFLAGS) $(SD)/terminal.cpp -c -o $(BD)/terminal.o
+
 utils.o:
 	$(CXX) $(CXXFLAGS) $(SD)/utils.cpp -c -o $(BD)/utils.o
+
+wad.o:
+	$(CC) $(CCFLAGS) $(SD)/wad.c -c -o $(BD)/wad.o
 
 world.o:
 	$(CXX) $(CXXFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/utils.o $(BD)/world.o
+	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o

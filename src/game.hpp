@@ -41,14 +41,14 @@ namespace humrcraft {
 
         class Thing : public Object { //TODO: add model struct //TODO: add movement functions
             public:
-                float maxhealth;
-                float health;
-                float damage;
                 char* name;
                 GLuint textureid;
                 Thing *head, *rhand, *lhand, *chest, *back, *legs, *feet;
                 void* data;
                 int datasize;
+                float maxhealth;
+                float health;
+                float damage;
                 Thing* (*recreatef)(Thing* base, void* data, int datasize);
                 void (*initf)(Thing* thing);
                 void (*uninitf)(Thing* thing);
@@ -69,14 +69,23 @@ namespace humrcraft {
                 virtual void attack();
                 virtual void action(const char* action);
                 virtual void collisionCallback(struct manifold* manifold);
+                static Thing* defaultRecreatef(Thing* base, void* data, int datasize);
         };
         class Game : public World {
             public:
                 utils::List<Thing*> things;
                 Game();
                 virtual ~Game();
-                virtual int addThing(Thing* thing);
+                virtual int registerThing(Thing* thing);
                 virtual Thing* createThing(int x, void* data, int datasize);
+        };
+        class Block : public Thing {
+            public:
+                Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, GLuint textureid) :
+                    Thing(data, datasize, recreatef, initf, uninitf, shape, health, damage, textureid) {
+                }
+                virtual ~Block() {
+                }
         };
         class Resources : public Object { //TODO: implement wads
             public:

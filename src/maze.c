@@ -118,9 +118,6 @@ bool createLinearMaze(struct world* world, int startx, int starty, struct tile s
     }
     *getTile(world, startx, starty) = start;
     *getTile(world, x, y) = end;*/
-    struct path {
-        int x, y;
-    };
     return 0;
 }
 bool solve(struct world* world, int* x, int* y, int* heading, struct lfr* last) {
