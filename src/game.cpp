@@ -28,12 +28,13 @@
 
 namespace humrcraft {
     namespace game {
-        Thing::Thing(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, GLuint textureid) : Object(shape) {
+        Thing::Thing(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Object(NULL) {
             this->family.pushBack("Thing");
-            this->maxhealth = health;
+            this->resources = NULL;
+            this->textureid = 0;
+            this->maxhealth = 0;
             this->health = this->maxhealth;
-            this->damage = damage;
-            this->textureid = textureid;
+            this->damage = 0;
             this->head = NULL;
             this->rhand = NULL;
             this->lhand = NULL;
@@ -47,6 +48,7 @@ namespace humrcraft {
             this->initf = initf;
             this->uninitf = uninitf;
             this->updatef = NULL;
+            this->interfacef = NULL;
             this->renderf = NULL;
             this->speakf = NULL;
             this->usef = NULL;
@@ -75,38 +77,19 @@ namespace humrcraft {
                 this->updatef(this, delta);
             }
         }
+        void Thing::interface(Interface* interface) {
+            if(this->checkFamily(interface, "Resources", 2)) {
+                this->resources = (Resources*)interface;
+            }
+            if(this->interfacef) {
+                this->interfacef(this, interface);
+            }
+        }
         void Thing::render(Renderer* renderer) {
             Object::render(renderer);
-            if(!this->checkFamily(renderer, "SDLGLRenderer", 3)) return;
-            if(this->textureid) {
-                glBindTexture(GL_TEXTURE_2D, this->textureid);
-                glEnable(GL_TEXTURE_2D);
-                    glEnable(GL_BLEND);
-                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                        glBegin(GL_TRIANGLES);
-                            math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y-(float)1/2});
-                            glTexCoord2f(0, 1);
-                            glVertex3f(pos.x, pos.y, 1);
-                            pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
-                            glTexCoord2f(1, 1);
-                            glVertex3f(pos.x, pos.y, 1);
-                            pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
-                            glTexCoord2f(0, 0);
-                            glVertex3f(pos.x, pos.y, 0);
-
-                            pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y+(float)1/2});
-                            glTexCoord2f(1, 0);
-                            glVertex3f(pos.x, pos.y, 1);
-                            pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x+(float)1/2, this->getPos().y-(float)1/2});
-                            glTexCoord2f(1, 1);
-                            glVertex3f(pos.x, pos.y, 1);
-                            pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->getPos().x-(float)1/2, this->getPos().y+(float)1/2});
-                            glTexCoord2f(0, 0);
-                            glVertex3f(pos.x, pos.y, 0);
-                        glEnd();
-                    glDisable(GL_BLEND);
-                glDisable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, 0);
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
+            if(this->resources) {
+                ((humrcraft::renderers::SDLRenderer*)renderer)->drawImage(this->getPos(), this->resources->getTexture(this->textureid));
             }
             if(this->renderf) {
                 this->renderf(this, renderer);
@@ -145,8 +128,9 @@ namespace humrcraft {
             }
         }
         Thing* Thing::defaultRecreatef(Thing* base, void* data, int datasize) {
-            Thing* thing = new Thing(data, datasize, base->recreatef, base->initf, base->uninitf, base->shape, base->health, base->damage, base->textureid);
+            Thing* thing = new Thing(data, datasize, base->recreatef, base->initf, base->uninitf);
             thing->updatef = base->updatef;
+            thing->interfacef = base->interfacef;
             thing->renderf = base->renderf;
             thing->speakf = base->speakf;
             thing->usef = base->usef;
@@ -156,7 +140,13 @@ namespace humrcraft {
             return thing;
         }
 
+        Block::Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Thing(data, datasize, recreatef, initf, uninitf) {
+        }
+        Block::~Block() {
+        }
+
         Game::Game() {
+            this->family.pushBack("Game");
         }
         Game::~Game() {
         }
@@ -166,35 +156,38 @@ namespace humrcraft {
             }
             return -1;
         }
+        int Game::registerBlock(Block* block) {
+            if(block) {
+                return this->blocks.add(block);
+            }
+            return -1;
+        }
         Thing* Game::createThing(int x, void* data, int datasize) {
-            return (*this->things.get(x))->recreate(data, datasize);
+            return this->things[x]->recreate(data, datasize);
+        }
+        Block* Game::createBlock(int x, void* data, int datasize) {
+            return (Block*)this->blocks[x]->recreate(data, datasize);
         }
 
-        Resources::Resources() : Object(NULL) {
+        Resources::Resources() : Interface() {
+            this->family.pushBack("Resources");
         }
         Resources::~Resources() {
-            glDeleteTextures(this->textures.size(), this->textures.getArray());
+            for(int i=0; i<this->textures.size(); i++) {
+                SDL_FreeSurface(this->getTexture(i));
+            }
         }
         void Resources::addTexture(SDL_Surface* surface) {
-            GLuint id=0;
-            glGenTextures(1, &id);
-            glBindTexture(GL_TEXTURE_2D, id);
-            int color = surface->format->BytesPerPixel==4?GL_RGBA:GL_RGB;
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexImage2D(GL_TEXTURE_2D, 0, color, surface->w, surface->h, 0, color, GL_UNSIGNED_BYTE, surface->pixels);
-            this->textures.pushBack(id);
-            SDL_FreeSurface(surface);
+            this->textures.pushBack(surface);
         }
-        GLuint Resources::getTexture(int n) {
+        SDL_Surface* Resources::getTexture(int n) {
             return this->textures[n];
         }
 
         Tiles::Tiles(Resources* resources) : Object(NULL) {
-            sizex = 50;
-            sizey = 50;
+            this->family.pushBack("Tiles");
+            sizex = 1000-500;
+            sizey = 100;
             tiles = (int*)malloc(sizeof(int)*this->sizex*this->sizey);
             /*world = createWorld(this->sizex, this->sizey);
             srand(::time(NULL));
@@ -220,7 +213,7 @@ namespace humrcraft {
         }
          void Tiles::render(Renderer* renderer) {
             Object::render(renderer);
-            if(!this->checkFamily(renderer, "SDLGLRenderer", 3)) return;
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
             /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
                 srand(::time(NULL));
                 resetWorld(world, {Wall, 0});
@@ -248,65 +241,38 @@ namespace humrcraft {
                     }
                 }
             }*/
-            glEnable(GL_TEXTURE_2D);
-                glEnable(GL_BLEND);
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                    math::V2f start = ((renderers::SDLGLRenderer*)renderer)->GLGetPos({-1, 1});
-                    math::V2f end = ((renderers::SDLGLRenderer*)renderer)->GLGetPos({1, -1});
-                    for(int y=fmax(this->sizey-start.y-(float)this->sizey/2, 0); y<fmin(this->sizey-end.y-(float)this->sizey/2, this->sizey); y++) {
-                        for(int x=fmax(start.x+(float)this->sizex/2, 0); x<fmin(end.x+(float)this->sizex/2, this->sizex); x++) {
-                            glBindTexture(GL_TEXTURE_2D, resources->getTexture(this->tiles[this->sizex*y+x]));
-                            glBegin(GL_TRIANGLES);
-                                math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
-                                glTexCoord2f(0, 1);
-                                glVertex3f(pos.x, pos.y, 1);
-                                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
-                                glTexCoord2f(1, 1);
-                                glVertex3f(pos.x, pos.y, 1);
-                                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
-                                glTexCoord2f(0, 0);
-                                glVertex3f(pos.x, pos.y, 0);
+            math::V2f start = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({0, ((humrcraft::renderers::SDLRenderer*)renderer)->buffer->h});
+            math::V2f end = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({((humrcraft::renderers::SDLRenderer*)renderer)->buffer->w, 0});
+            for(int y=fmax(start.y/0.5+(float)this->sizey/2, 0); y<fmin(end.y/0.5+(float)this->sizey/2, this->sizey); y++) {
+                for(int x=fmax(start.x/0.5+(float)this->sizex/2, 0); x<fmin(end.x/0.5+(float)this->sizey/2, this->sizex); x++) {
+                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawImage({(float)(x*0.5-((float)this->sizex/2*0.5-0.5/2)), (float)(y*0.5-((float)this->sizey/2*0.5-0.5/2))}, this->resources->getTexture(this->tiles[this->sizex*y+x]));
+                }
+            }
+            /*glBindTexture(GL_TEXTURE_2D, textures[0]);
+            glBegin(GL_TRIANGLES);
+                math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                glTexCoord2f(0, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                glTexCoord2f(1, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                glTexCoord2f(0, 0);
+                glVertex3f(pos.x, pos.y, 0);
 
-                                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
-                                glTexCoord2f(1, 0);
-                                glVertex3f(pos.x, pos.y, 1);
-                                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x+1-(float)this->sizex/2, this->sizey-1-y-(float)this->sizey/2});
-                                glTexCoord2f(1, 1);
-                                glVertex3f(pos.x, pos.y, 1);
-                                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({x-(float)this->sizex/2, this->sizey-1-y+1-(float)this->sizey/2});
-                                glTexCoord2f(0, 0);
-                                glVertex3f(pos.x, pos.y, 0);
-                            glEnd();
-                        }
-                    }
-                    /*glBindTexture(GL_TEXTURE_2D, textures[0]);
-                    glBegin(GL_TRIANGLES);
-                        math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
-                        glTexCoord2f(0, 1);
-                        glVertex3f(pos.x, pos.y, 1);
-                        pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
-                        glTexCoord2f(1, 1);
-                        glVertex3f(pos.x, pos.y, 1);
-                        pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
-                        glTexCoord2f(0, 0);
-                        glVertex3f(pos.x, pos.y, 0);
-
-                        pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
-                        glTexCoord2f(1, 0);
-                        glVertex3f(pos.x, pos.y, 1);
-                        pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
-                        glTexCoord2f(1, 1);
-                        glVertex3f(pos.x, pos.y, 1);
-                        pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
-                        glTexCoord2f(0, 0);
-                        glVertex3f(pos.x, pos.y, 0);
-                    glEnd();*/
-                glDisable(GL_BLEND);
-            glDisable(GL_TEXTURE_2D);
+                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                glTexCoord2f(1, 0);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x+1-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
+                glTexCoord2f(1, 1);
+                glVertex3f(pos.x, pos.y, 1);
+                pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
+                glTexCoord2f(0, 0);
+                glVertex3f(pos.x, pos.y, 0);
+            glEnd();*/
         }
 
-        Gun::Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, GLuint textureid) :
-            Thing(data, datasize, recreatef, initf, uninitf, shape, health, 0, textureid) {
+        Gun::Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Thing(data, datasize, recreatef, initf, uninitf) {
             this->family.pushBack("Gun");
         }
         Gun::~Gun() {
@@ -317,8 +283,7 @@ namespace humrcraft {
             }
         }*/
 
-        Projectile::Projectile(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, float speed, GLuint textureid) :
-        Thing(data, datasize, recreatef, initf, uninitf, shape, health, damage, textureid) {
+        Projectile::Projectile(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Thing(data, datasize, recreatef, initf, uninitf) {
             this->family.pushBack("Projectile");
             this->speed = speed;
         }

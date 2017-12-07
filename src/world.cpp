@@ -24,7 +24,6 @@
  * SOFTWARE.
  */
 #include <iostream>
-#include "renderers.hpp"
 #include "world.hpp"
 #include "shapes.hpp"
 
@@ -33,10 +32,8 @@ namespace humrcraft {
         this->id = 0;
         this->family.pushBack("Object");
         this->world = NULL;
-        this->shape = shape;
-        if(this->shape) {
-            this->shape->obj = this;
-        }
+        this->shape = NULL;
+        this->setShape(shape);
         this->time = 0;
         this->pos = {0, 0};
         this->ori = {0, 0};
@@ -111,6 +108,15 @@ namespace humrcraft {
     void Object::setAbsRot(math::V2f rot) {
         this->rot = rot;
     }
+    void Object::setShape(Shape* shape) {
+        if(this->shape && !this->shape->shared) {
+            delete this->shape;
+        }
+        this->shape = shape;
+        if(this->shape) {
+            this->shape->obj = this;
+        }
+    }
     void Object::applyImpulse(math::V2f j) {
         if(this->shape && !isinf(j.x)) {
             this->vel = math::carteToPolar(math::polarToCarte({j.x*(isinf(this->shape->getInvMass())?1:this->shape->getInvMass()), j.y})+math::polarToCarte(this->vel));
@@ -175,6 +181,7 @@ namespace humrcraft {
         int offset = 0;
         while((interface = (Interface*)this->getObject("Interface", 1, offset))) {
             if(this->checkFamily(interface, "Renderer", 2) || this->checkFamily(interface, "Speaker", 2)) {
+                offset++;
                 continue;
             }
             interface->begin();

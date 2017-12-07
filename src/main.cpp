@@ -68,7 +68,7 @@ class BigNumber {
 };
 
 humrcraft::game::Game* game = new humrcraft::game::Game();
-humrcraft::renderers::SDLGLRenderer* renderer;
+humrcraft::renderers::SDLRenderer* renderer;
 humrcraft::Speaker* speaker;
 humrcraft::game::Resources* resources;
 humrcraft::game::Thing* hero;
@@ -162,6 +162,7 @@ int main(int argc, char** argv) {
         }
         std::cout<<'\n';
     }*/
+    /*
     {
         CIPL::Scope scope;
         std::ifstream file("cfg.cipl");
@@ -175,11 +176,12 @@ int main(int argc, char** argv) {
         free(buff);
         file.close();
     }
+    */
     if(SDL_Init(SDL_INIT_EVERYTHING)) {
         std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
         stop(1);
     }
-    renderer = new humrcraft::renderers::SDLGLRenderer("humrcraft 1.0", 800, 600, 2, 1);
+    renderer = new humrcraft::renderers::SDLRenderer("humrcraft 1.0", 800, 600);
     game->add(renderer);
     /*speaker = new Speaker();
     game->add(speaker);*/
@@ -200,10 +202,14 @@ int main(int argc, char** argv) {
     /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
     humr->pos = {0, 0};
     game->add(humr);*/
-    game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}),
-        1, 0, resources->getTexture(1))); //Human
-    game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}),
-        1, 0, resources->getTexture(2))); //Matemat
+    game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}));
+        thing->textureid = 1;
+    }, NULL)); //Human
+    game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}));
+        thing->textureid = 2;
+    }, NULL)); //Matemat
     humrcraft::game::Thing* human = game->createThing(0, NULL, 0);
     human->pos = {0, 0};
     game->add(human);

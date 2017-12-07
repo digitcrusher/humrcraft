@@ -54,12 +54,12 @@ namespace utils {
             virtual void popBack(T* t);
             virtual void replace(int element, T t);
             virtual void resize(int newsize);
-            virtual T* getP(int element);
+            virtual T* get(int element);
             virtual void clear();
             virtual T* getArray();
             virtual int size();
             virtual int capacity();
-            virtual T& operator[](int n);
+            virtual T operator[](int n);
             virtual Vector<T>& operator=(const Vector<T>& rvalue);
     };
     template<typename T> Vector<T>::Vector() {
@@ -82,7 +82,11 @@ namespace utils {
     }
     template<typename T> void Vector<T>::popBack(T* t) {
         *t = this->array[--this->vsize];
-        return this->resize(this->vsize+1);
+        try {
+            this->resize(this->vsize+1);
+        }catch(std::exception e) {
+            throw e;
+        }
     }
     template<typename T> void Vector<T>::replace(int element, T t) {
         if(element > this->vsize-1) {
@@ -97,7 +101,7 @@ namespace utils {
         this->vcapacity = newsize;
         this->array = (T*)realloc(this->array, sizeof(T)*this->vcapacity);
     }
-    template<typename T> T* Vector<T>::getP(int element) {
+    template<typename T> T* Vector<T>::get(int element) {
         if(element > this->vsize-1) {
             throw "Invalid element";
         }
@@ -106,7 +110,11 @@ namespace utils {
     template<typename T> void Vector<T>::clear() {
         this->vsize=0;
         this->vcapacity=this->vsize+1;
-        this->resize(this->vcapacity);
+        try {
+            this->resize(this->vcapacity);
+        }catch(std::exception e) {
+            throw e;
+        }
     }
     template<typename T> T* Vector<T>::getArray() {
         return this->array;
@@ -117,8 +125,12 @@ namespace utils {
     template<typename T> int Vector<T>::capacity() {
         return this->vcapacity;
     }
-    template<typename T> T& Vector<T>::operator[](int n) {
-        return this->array[n];
+    template<typename T> T Vector<T>::operator[](int n) {
+        try {
+            return *this->get(n);
+        }catch(std::exception e) {
+            throw e;
+        }
     }
     template<typename T> Vector<T>& Vector<T>::operator=(const Vector<T>& rvalue) {
         this->vsize = rvalue.vsize;
@@ -145,7 +157,7 @@ namespace utils {
             virtual void remove(int x);
             virtual bool isFree(int x);
             virtual T* get(int x);
-            virtual T operator[](const int& rvalue);
+            virtual T operator[](int rvalue);
             virtual List<T>& operator=(const List<T>& rvalue);
     };
     template<typename T> List<T>::List() {
@@ -169,7 +181,11 @@ namespace utils {
                 return i;
             }
         }
-        this->elems.pushBack({elem, 0});
+        try {
+            this->elems.pushBack({elem, 0});
+        }catch(std::exception e) {
+            throw e;
+        }
         return this->elems.size()-1;
     }
     template<typename T> void List<T>::remove(int x) {
@@ -190,7 +206,7 @@ namespace utils {
         }
         throw;
     }
-    template<typename T> T List<T>::operator[](const int& rvalue) {
+    template<typename T> T List<T>::operator[](int rvalue) {
         return *this->get(rvalue);
     }
     template<typename T> List<T>& List<T>::operator=(const List<T>& rvalue) {

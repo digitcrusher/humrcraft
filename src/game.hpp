@@ -27,14 +27,16 @@
 #define GAME_HPP
 #include <stdlib.h>
 #include <SDL2/SDL_image.h>
+#include "renderers.hpp"
 #include "world.hpp"
 #include "maze.h"
 
 namespace humrcraft {
     namespace game {
         class Thing;
+        class Block;
         class Game;
-        class Textures;
+        class Resources;
         class Tiles;
         class Gun;
         class Projectile;
@@ -42,7 +44,8 @@ namespace humrcraft {
         class Thing : public Object { //TODO: add model struct //TODO: add movement functions
             public:
                 char* name;
-                GLuint textureid;
+                Resources* resources;
+                int textureid;
                 Thing *head, *rhand, *lhand, *chest, *back, *legs, *feet;
                 void* data;
                 int datasize;
@@ -53,16 +56,18 @@ namespace humrcraft {
                 void (*initf)(Thing* thing);
                 void (*uninitf)(Thing* thing);
                 void (*updatef)(Thing* thing, double delta);
+                void (*interfacef)(Thing* thing, Interface* interface);
                 void (*renderf)(Thing* thing, Renderer* renderer);
                 void (*speakf)(Thing* thing, Speaker* speaker);
                 void (*usef)(Thing* thing);
                 void (*attackf)(Thing* thing);
                 void (*actionf)(Thing* thing, const char* action);
                 void (*collisionCallbackf)(Thing* thing, struct manifold* manifold);
-                Thing(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, GLuint textureid);
+                Thing(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)/*, Shape* shape, float health, float damage, int textureid*/);
                 virtual ~Thing();
                 virtual Thing* recreate(void* data, int datasize);
                 virtual void update(double delta);
+                virtual void interface(Interface* interface);
                 virtual void render(Renderer* renderer);
                 virtual void speak(Speaker* speaker);
                 virtual void use();
@@ -71,23 +76,23 @@ namespace humrcraft {
                 virtual void collisionCallback(struct manifold* manifold);
                 static Thing* defaultRecreatef(Thing* base, void* data, int datasize);
         };
+        class Block : public Thing {
+            public:
+                Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing));
+                virtual ~Block();
+        };
         class Game : public World {
             public:
                 utils::List<Thing*> things;
+                utils::List<Block*> blocks;
                 Game();
                 virtual ~Game();
                 virtual int registerThing(Thing* thing);
+                virtual int registerBlock(Block* block);
                 virtual Thing* createThing(int x, void* data, int datasize);
+                virtual Block* createBlock(int x, void* data, int datasize);
         };
-        class Block : public Thing {
-            public:
-                Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, GLuint textureid) :
-                    Thing(data, datasize, recreatef, initf, uninitf, shape, health, damage, textureid) {
-                }
-                virtual ~Block() {
-                }
-        };
-        class Resources : public Object { //TODO: implement wads
+        class Resources : public Interface { //TODO: implement wads
             public:
                 /*struct texturesheet {
                     SDL_Surface* texturesheet;
@@ -99,13 +104,11 @@ namespace humrcraft {
                 }
                 SDL_Surface* getTexture(struct texturesheet* texturesheet) {
                 }*/
-                utils::Vector<GLuint> textures;
+                utils::Vector<SDL_Surface*> textures;
                 Resources();
                 virtual ~Resources();
                 virtual void addTexture(SDL_Surface* surface);
-                virtual GLuint getTexture(int n);
-                virtual void loadResourcePack(const char* filename) {
-                }
+                virtual SDL_Surface* getTexture(int n);
         };
         class Tiles : public Object {
             public:
@@ -113,9 +116,9 @@ namespace humrcraft {
                 int sizey;
                 int* tiles;
                 Resources* resources;
-                struct world* world;
+                /*struct world* world;
                 int x, y, heading;
-                struct lfr last;
+                struct lfr last;*/
                 Tiles(Resources* resources);
                 virtual ~Tiles();
                 virtual void update(double delta);
@@ -124,14 +127,14 @@ namespace humrcraft {
         class Gun : public Thing {
             public:
                 Projectile* sample;
-                Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, GLuint textureid);
+                Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing));
                 virtual ~Gun();
                 //virtual void use();
         };
         class Projectile : public Thing {
             public:
                 float speed;
-                Projectile(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing), Shape* shape, float health, float damage, float speed, GLuint textureid);
+                Projectile(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing));
                 virtual ~Projectile();
                 virtual void update(double delta);
                 virtual void render(Renderer* renderer);

@@ -24,7 +24,7 @@
 SD=./src
 BD=./build
 CC=gcc#i686-w64-mingw32-gcc
-CCFLAGS=-Wall -Wextra -Wpedantic -ggdb -O0
+CCFLAGS=-Wall -Wextra -Wpedantic -std=c11 -ggdb -O0
 CXX=g++#i686-w64-mingw32-g++
 CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0#-I./mingw32/SDL2/i686-w64-mingw32/include
 LD=$(CXX)

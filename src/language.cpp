@@ -136,7 +136,7 @@ namespace CIPL {
             return (Variable*)NULL;
         }));
 
-        this->addOp(new Operator("&", 5, inttype, inttype, 1, 1, 0, [](Variable* lvalue, Variable* rvalue) {
+        this->addOp(new Operator("&", 5, inttype, inttype, 1, 1, 0, [](Variable* lvalue, Variable* rvalue) { //TODO: sigsegv
             if(lvalue->get() && rvalue->get()) {
                 if(varcmp(lvalue->get(), inttype) && varcmp(rvalue->get(), inttype)) {
                     int* result = (int*)malloc(sizeof(int));
@@ -555,7 +555,7 @@ namespace CIPL {
                             struct type* type = NULL;
                             for(int j=0; j<this->types.size(); j++) {
                                 if(!strcmp(this->types[j].id, tokens[i])) {
-                                    type = &this->types[j];
+                                    type = this->types.get(j);
                                     break;
                                 }
                             }

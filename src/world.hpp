@@ -27,13 +27,12 @@
 #define WORLD_HPP
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
-#include <GL/gl.h>
 #include "utils.hpp"
 #include "math.hpp"
 #include "maze.h"
 
 //TODO: make this into a library
-//TODO: add Interface class and Keyboard class
+//TODO: add Keyboard class
 
 namespace humrcraft {
     class World;
@@ -43,7 +42,7 @@ namespace humrcraft {
     class Renderer;
     class Speaker;
 
-    struct material { //TODO: add enum with common materials
+    struct material {
         float restitution;
         float density; //kg/m^2
     };
@@ -99,6 +98,7 @@ namespace humrcraft {
             virtual void setAbsOri(math::V2f ori);
             virtual void setAbsVel(math::V2f vel);
             virtual void setAbsRot(math::V2f rot);
+            virtual void setShape(Shape* shape);
             virtual void applyImpulse(math::V2f j);
             virtual void applyTorque(math::V2f t);
             virtual bool checkFamily(Object* obj, const char* member, int level);
@@ -182,6 +182,13 @@ namespace humrcraft {
             virtual void pauseAudio(bool pause);
             static void audioCallback(void* userdata, uint8_t* stream, int size);
     };
+
+    const struct material rock = {0.1, 0.6};
+    const struct material wood = {0.2, 0.3};
+    const struct material metal = {0.05, 1.2};
+    const struct material bouncyball = {0.8, 0.3};
+    const struct material superball = {0.95, 0.3};
+    const struct material pillow = {0.2, 0.1};
 
     bool checkCollision(struct manifold* manifold, Object* a, Object* b, World* world);
     void resolveCollision(struct manifold manifold);

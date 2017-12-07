@@ -198,11 +198,12 @@ namespace humrcraft {
             SDL_DestroyWindow(this->window);
         }
         void SDLGLRenderer::begin() {
+            SDL_GL_MakeCurrent(this->window, this->context);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glLoadIdentity();
             glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
             glRotatef(-this->getOri().y, 0, 0, 1);
-            glTranslatef(-this->GLMapPos(humrcraft::Object::getPos()).x, -this->GLMapPos(humrcraft::Object::getPos()).y, 0);
+            glTranslatef(-this->GLMapPos(this->getPos()).x, -this->GLMapPos(this->getPos()).y, 0);
             SDL_GetWindowSize(this->window, &this->w, &this->h);
             glViewport(0, 0, this->w, this->h);
         }
