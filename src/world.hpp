@@ -70,11 +70,11 @@ namespace humrcraft {
         math::V2f fa; //force for a
         math::V2f fb; //force for b
     };
-    class Object { //TODO: move from 2d to 3d //TODO: change to momentum instead of velocity //TODO: improve shared objects
+    class Object { //TODO: move from 2d to 3d //TODO: change to momentum instead of velocity //TODO: improve shared objects //TODO: add update, interface priorities
         public:
             int id;
             utils::Vector<const char*> family;
-            World* world; //TODO: change to Object*
+            World* world; //TODO: change to Object* owner
             Shape* shape; //TODO: make this a Vector
             float time; //Seconds
             bool stationary;
@@ -153,7 +153,7 @@ namespace humrcraft {
             virtual math::V2f getNormal(math::V2f angle);
             virtual Shape& operator=(const Shape& rvalue);
     };
-    class Interface : public Object {
+    class Interface : public Object { //TODO: add the ability to interface Interfaces
         public:
             Interface();
             virtual ~Interface();

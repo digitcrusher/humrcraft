@@ -1,5 +1,5 @@
 /*
- * gane.hpp
+ * game.hpp
  * humrcraft Source Code
  * Available on Github
  *
@@ -35,9 +35,10 @@ namespace humrcraft {
     namespace game {
         class Thing;
         class Block;
+        class Level;
         class Game;
         class Resources;
-        class Tiles;
+        //class Tiles;
         class Gun;
         class Projectile;
 
@@ -80,6 +81,24 @@ namespace humrcraft {
             public:
                 Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing));
                 virtual ~Block();
+                static Thing* defaultRecreatef(Thing* base, void* data, int datasize);
+        };
+        class Level : public Thing { //TODO: add chunks
+            public:
+                Block** blocks;
+                math::V2iPair size;
+                math::V2f blocksize;
+                math::V2iPair visibleblocks;
+                Level(math::V2iPair size, math::V2f blocksize);
+                virtual ~Level();
+                virtual void update(double delta);
+                virtual void interface(Interface* interface);
+                virtual void render(Renderer* renderer);
+                virtual void speak(Speaker* speaker);
+                virtual math::V2i getSize();
+                virtual Block** getBlock(math::V2i pos);
+                virtual Block** getBlock(math::V2f pos);
+                virtual void generateLevel();
         };
         class Game : public World {
             public:
@@ -89,8 +108,8 @@ namespace humrcraft {
                 virtual ~Game();
                 virtual int registerThing(Thing* thing);
                 virtual int registerBlock(Block* block);
-                virtual Thing* createThing(int x, void* data, int datasize);
-                virtual Block* createBlock(int x, void* data, int datasize);
+                virtual Thing* recreateThing(int x, void* data, int datasize);
+                virtual Block* recreateBlock(int x, void* data, int datasize);
         };
         class Resources : public Interface { //TODO: implement wads
             public:

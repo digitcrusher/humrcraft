@@ -141,11 +141,130 @@ namespace humrcraft {
         }
 
         Block::Block(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Thing(data, datasize, recreatef, initf, uninitf) {
+            this->family.pushBack("Block");
         }
         Block::~Block() {
         }
+        Thing* Block::defaultRecreatef(Thing* base, void* data, int datasize) {
+            Block* block = new Block(data, datasize, base->recreatef, base->initf, base->uninitf);
+            block->updatef = base->updatef;
+            block->interfacef = base->interfacef;
+            block->renderf = base->renderf;
+            block->speakf = base->speakf;
+            block->usef = base->usef;
+            block->attackf = base->attackf;
+            block->actionf = base->actionf;
+            block->collisionCallbackf = base->collisionCallbackf;
+            return block;
+        }
 
-        Game::Game() {
+        Level::Level(math::V2iPair size, math::V2f blocksize) : Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+                thing->textureid = 0;
+            }, NULL) {
+            this->family.pushBack("Level");
+            this->size = size;
+            this->blocksize = blocksize;
+            this->visibleblocks = this->size;
+            this->blocks = (Block**)malloc(sizeof(Block*)*(this->getSize().x*this->getSize().y));
+            for(int i=0; i<this->getSize().x*this->getSize().y; i++) {
+                this->blocks[i] = NULL;
+            }
+        }
+        Level::~Level() {
+            for(int i=0; i<this->getSize().x*this->getSize().y; i++) {
+                if(this->blocks[i] && !this->blocks[i]->shared) {
+                    delete this->blocks[i];
+                }
+            }
+        }
+        void Level::update(double delta) {
+            Thing::update(delta);
+            for(int x=this->visibleblocks.v1.x; x<this->visibleblocks.v2.x; x++) {
+                for(int y=this->visibleblocks.v1.y; y<this->visibleblocks.v2.y; y++) {
+                    Block* block = (*this->getBlock((math::V2i){x, y}));
+                    if(block) {
+                        block->update(delta);
+                    }
+                }
+            }
+        }
+        void Level::interface(Interface* interface) {
+            Thing::interface(interface);
+            for(int x=this->visibleblocks.v1.x; x<this->visibleblocks.v2.x; x++) {
+                for(int y=this->visibleblocks.v1.y; y<this->visibleblocks.v2.y; y++) {
+                    Block* block = (*this->getBlock((math::V2i){x, y}));
+                    if(block) {
+                        block->interface(interface);
+                    }
+                }
+            }
+        }
+        void Level::render(Renderer* renderer) {
+            Thing::render(renderer);
+            if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
+            math::V2f start = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({0, ((humrcraft::renderers::SDLRenderer*)renderer)->buffer->h});
+            math::V2f end = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({((humrcraft::renderers::SDLRenderer*)renderer)->buffer->w, 0});
+            this->visibleblocks = (math::V2iPair){{(int)fmax(floor(start.x/this->blocksize.x), this->size.v1.x),
+                                                   (int)fmax(floor(start.y/this->blocksize.y), this->size.v1.y)},
+                                                  {(int)fmin(ceil(end.x/this->blocksize.x), this->size.v2.x),
+                                                   (int)fmin(ceil(end.y/this->blocksize.y), this->size.v2.y)}};
+            for(int x=this->visibleblocks.v1.x; x<this->visibleblocks.v2.x; x++) {
+                for(int y=this->visibleblocks.v1.y; y<this->visibleblocks.v2.y; y++) {
+                    Block* block = *this->getBlock((math::V2i){x, y});
+                    if(block) {
+                        block->pos = {(float)x*this->blocksize.x+this->blocksize.x/2, (float)y*this->blocksize.y+this->blocksize.y/2};
+                        block->render(renderer);
+                    }
+                }
+            }
+        }
+        void Level::speak(Speaker* speaker) {
+            Thing::speak(speaker);
+            for(int x=this->visibleblocks.v1.x; x<this->visibleblocks.v2.x; x++) {
+                for(int y=this->visibleblocks.v1.y; y<this->visibleblocks.v2.y; y++) {
+                    Block* block = (*this->getBlock((math::V2i){x, y}));
+                    if(block) {
+                        block->speak(speaker);
+                    }
+                }
+            }
+        }
+        math::V2i Level::getSize() {
+            return {this->size.v2.x-this->size.v1.x, this->size.v2.y-this->size.v1.y};
+        }
+        Block** Level::getBlock(math::V2i pos) {
+            return this->blocks+(pos.x-this->size.v1.x)+(pos.y-this->size.v1.y)*this->getSize().x;
+        }
+        Block** Level::getBlock(math::V2f pos) {
+            return this->getBlock((math::V2i){(int)(pos.x/this->blocksize.x),
+                                              (int)(pos.y/this->blocksize.y)});
+        }
+        void Level::generateLevel() {
+            if(!this->checkFamily(this->world, "Game", 2)) return;
+            for(int x=this->size.v1.x; x<this->size.v2.x; x++) {
+                for(int y=this->size.v1.y; y<this->size.v2.y; y++) {
+                    Block** block = this->getBlock((math::V2i){x, y});
+                    int blocktype = rand()%3;
+                    switch(blocktype) {
+                        case 0:
+                            blocktype = 0;
+                            break;
+                        case 1:
+                            blocktype = 1;
+                            break;
+                        case 2:
+                            blocktype = 3;
+                            break;
+                    }
+                    *block = ((humrcraft::game::Game*)this->world)->recreateBlock(blocktype, NULL, 0);
+                }
+            }
+            /*for(int i=0; i<this->getSize().x*this->getSize().y; i++) {
+                this->blocks[i] = ((humrcraft::game::Game*)this->world)->recreateBlock(0, NULL, 0);
+            }*/
+        }
+
+        Game::Game() : World() {
             this->family.pushBack("Game");
         }
         Game::~Game() {
@@ -162,10 +281,10 @@ namespace humrcraft {
             }
             return -1;
         }
-        Thing* Game::createThing(int x, void* data, int datasize) {
+        Thing* Game::recreateThing(int x, void* data, int datasize) {
             return this->things[x]->recreate(data, datasize);
         }
-        Block* Game::createBlock(int x, void* data, int datasize) {
+        Block* Game::recreateBlock(int x, void* data, int datasize) {
             return (Block*)this->blocks[x]->recreate(data, datasize);
         }
 
@@ -184,19 +303,19 @@ namespace humrcraft {
             return this->textures[n];
         }
 
-        Tiles::Tiles(Resources* resources) : Object(NULL) {
+        /*Tiles::Tiles(Resources* resources) : Object(NULL) {
             this->family.pushBack("Tiles");
-            sizex = 1000-500;
-            sizey = 100;
+            sizex = 1024;
+            sizey = 1024;
             tiles = (int*)malloc(sizeof(int)*this->sizex*this->sizey);
-            /*world = createWorld(this->sizex, this->sizey);
+            *//*world = createWorld(this->sizex, this->sizey);
             srand(::time(NULL));
             resetWorld(world, {Wall, 0});
             createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, ::time(NULL));
             x = 0;
             y = 0;
             heading = 0;
-            last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*/
+            last = {{Wall, 0}, {Wall, 0}, {Wall, 0}, 0};*//*
             this->resources = resources;
             for(int x=0; x<this->sizex; x++) {
                 for(int y=0; y<this->sizey; y++) {
@@ -204,17 +323,17 @@ namespace humrcraft {
                 }
             }
         }
-         Tiles::~Tiles() {
+        Tiles::~Tiles() {
             //deleteWorld(world);
             free(this->tiles);
         }
-         void Tiles::update(double delta) {
+        void Tiles::update(double delta) {
             Object::update(delta);
         }
-         void Tiles::render(Renderer* renderer) {
+        void Tiles::render(Renderer* renderer) {
             Object::render(renderer);
             if(!this->checkFamily(renderer, "SDLRenderer", 3)) return;
-            /*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
+            *//*if(solve(this->world, &this->x, &this->y, &this->heading, &this->last)) {
                 srand(::time(NULL));
                 resetWorld(world, {Wall, 0});
                 createLinearMaze(world, 0, 0, {Path, 0}, {Exit, 0}, {Path, 0}, 3, 0);
@@ -240,15 +359,15 @@ namespace humrcraft {
                             break;
                     }
                 }
-            }*/
+            }*//*
             math::V2f start = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({0, ((humrcraft::renderers::SDLRenderer*)renderer)->buffer->h});
             math::V2f end = ((humrcraft::renderers::SDLRenderer*)renderer)->SDLGetPos({((humrcraft::renderers::SDLRenderer*)renderer)->buffer->w, 0});
-            for(int y=fmax(start.y/0.5+(float)this->sizey/2, 0); y<fmin(end.y/0.5+(float)this->sizey/2, this->sizey); y++) {
-                for(int x=fmax(start.x/0.5+(float)this->sizex/2, 0); x<fmin(end.x/0.5+(float)this->sizey/2, this->sizex); x++) {
-                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawImage({(float)(x*0.5-((float)this->sizex/2*0.5-0.5/2)), (float)(y*0.5-((float)this->sizey/2*0.5-0.5/2))}, this->resources->getTexture(this->tiles[this->sizex*y+x]));
+            for(int x=fmax(floor(start.x/0.5+0.5+(float)this->sizex/2-0.5), 0); x<fmin(ceil(end.x/0.5+0.5+(float)this->sizex/2-0.5), this->sizex); x++) {
+                for(int y=fmax(floor(start.y/0.5+0.5+(float)this->sizey/2-0.5), 0); y<fmin(ceil(end.y/0.5+0.5+(float)this->sizey/2-0.5), this->sizey); y++) {
+                    ((humrcraft::renderers::SDLRenderer*)renderer)->drawImage({x*0.5-(float)this->sizex/2*0.5+0.5/2, y*0.5-(float)this->sizey/2*0.5+0.5/2}, this->resources->getTexture(this->tiles[this->sizex*y+x]));
                 }
             }
-            /*glBindTexture(GL_TEXTURE_2D, textures[0]);
+            *//*glBindTexture(GL_TEXTURE_2D, textures[0]);
             glBegin(GL_TRIANGLES);
                 math::V2f pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y-(float)this->sizey/2});
                 glTexCoord2f(0, 1);
@@ -269,8 +388,8 @@ namespace humrcraft {
                 pos = ((renderers::SDLGLRenderer*)renderer)->GLMapPos({this->x-(float)this->sizex/2, this->sizey-1-this->y+1-(float)this->sizey/2});
                 glTexCoord2f(0, 0);
                 glVertex3f(pos.x, pos.y, 0);
-            glEnd();*/
-        }
+            glEnd();*//*
+        }*/
 
         Gun::Gun(void* data, int datasize, Thing* (*recreatef)(Thing* base, void* data, int datasize), void (*initf)(Thing* thing), void (*uninitf)(Thing* thing)) : Thing(data, datasize, recreatef, initf, uninitf) {
             this->family.pushBack("Gun");

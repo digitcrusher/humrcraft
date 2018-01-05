@@ -37,8 +37,8 @@ LDLIBS=-L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 
 all: clean humrcraft
 
-humrcraft: brainfuck.o game.o graphics.o gui.o language.o main.o math.o maze.o module.o nbp.o procedural.o renderers.o shapes.o terminal.o utils.o wad.o world.o
-	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
+humrcraft: brainfuck.o game.o graphics.o gui.o language.o main.o math.o maze.o module.o nbp.o procedural.o renderers.o shapes.o terminal.o textsweeper.o utils.o wad.o world.o
+	$(LD) $(LDFLAGS) $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/textsweeper.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o $(LDLIBS) -o $(BD)/humrcraft
 
 brainfuck.o:
 	$(CC) $(CCFLAGS) $(SD)/brainfuck.c -c -o $(BD)/brainfuck.o
@@ -82,6 +82,9 @@ shapes.o:
 terminal.o:
 	$(CXX) $(CXXFLAGS) $(SD)/terminal.cpp -c -o $(BD)/terminal.o
 
+textsweeper.o:
+	$(CXX) $(CXXFLAGS) $(SD)/textsweeper.cpp -c -o $(BD)/textsweeper.o
+
 utils.o:
 	$(CXX) $(CXXFLAGS) $(SD)/utils.cpp -c -o $(BD)/utils.o
 
@@ -92,4 +95,4 @@ world.o:
 	$(CXX) $(CXXFLAGS) $(SD)/world.cpp -c -o $(BD)/world.o
 
 clean:
-	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o
+	rm -f $(BD)/humrcraft $(BD)/brainfuck.o $(BD)/game.o $(BD)/graphics.o $(BD)/gui.o $(BD)/language.o $(BD)/main.o $(BD)/math.o $(BD)/maze.o $(BD)/module.o $(BD)/nbp.o $(BD)/procedural.o $(BD)/renderers.o $(BD)/shapes.o $(BD)/terminal.o $(BD)/textsweeper.o $(BD)/utils.o $(BD)/wad.o $(BD)/world.o

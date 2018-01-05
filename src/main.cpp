@@ -72,8 +72,8 @@ humrcraft::renderers::SDLRenderer* renderer;
 humrcraft::Speaker* speaker;
 humrcraft::game::Resources* resources;
 humrcraft::game::Thing* hero;
-float gmulti = 1;
-bool pause = 1;
+//float gmulti = 1;
+bool pause = 0;
 bool running = 1;
 void stop(int status) {
     game->destroyAll();
@@ -86,7 +86,7 @@ void update(double delta) {
     game->update(delta);
     game->speak();
     game->interface();
-    for(int i=0; i<game->objs.size(); i++) {
+    /*or(int i=0; i<game->objs.size(); i++) {
         if(!game->objs.isFree(i)) {
             humrcraft::Object* a = game->objs[i];
             if(a->shape) {
@@ -103,17 +103,20 @@ void update(double delta) {
                 }
             }
         }
-    }
+    }*/
 }
 void render() {
     renderer->pos = hero->getPos();
     game->render();
+    //renderer->begin();
+    //renderer->end();
 }
 int main(int argc, char** argv) {
     std::cout<<"humrcraft 1.0 Copyright (C) 2017 Karol \"digitcrusher\" Łacina\n";
     std::cout<<"This program comes with ABSOLUTELY NO WARRANTY.\n";
     std::cout<<"This is free software, and you are welcome to redistribute it\n";
     std::cout<<"under certain conditions.\n";
+
     /*int i=0;
     int bignum=0;
     int bigdiv=0;
@@ -177,12 +180,14 @@ int main(int argc, char** argv) {
         file.close();
     }
     */
+
     if(SDL_Init(SDL_INIT_EVERYTHING)) {
         std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
         stop(1);
     }
     renderer = new humrcraft::renderers::SDLRenderer("humrcraft 1.0", 800, 600);
     game->add(renderer);
+    renderer->zoom = 32;
     /*speaker = new Speaker();
     game->add(speaker);*/
     resources = new humrcraft::game::Resources();
@@ -195,13 +200,7 @@ int main(int argc, char** argv) {
     resources->addTexture(IMG_Load("./gfx/papaver_orientale.png"));
     resources->addTexture(IMG_Load("./gfx/error.png"));
     resources->addTexture(IMG_Load("./gfx/water.png"));
-    humrcraft::game::Tiles* background = new humrcraft::game::Tiles(resources);
-    //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(resources);
-    game->add(background);
-    //game->add(foreground);
-    /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
-    humr->pos = {0, 0};
-    game->add(humr);*/
+
     game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
         thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}));
         thing->textureid = 1;
@@ -210,13 +209,40 @@ int main(int argc, char** argv) {
         thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.5}, {0.5, 0.3125}}));
         thing->textureid = 2;
     }, NULL)); //Matemat
-    humrcraft::game::Thing* human = game->createThing(0, NULL, 0);
+
+    game->registerBlock(new humrcraft::game::Block(NULL, 0, humrcraft::game::Block::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->textureid = 3;
+    }, NULL)); //Bricks
+    game->registerBlock(new humrcraft::game::Block(NULL, 0, humrcraft::game::Block::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->textureid = 4;
+    }, NULL)); //Green Sponge
+    game->registerBlock(new humrcraft::game::Block(NULL, 0, humrcraft::game::Block::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->textureid = 5;
+    }, NULL)); //Papaver Orientale
+    game->registerBlock(new humrcraft::game::Block(NULL, 0, humrcraft::game::Block::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->textureid = 7;
+    }, NULL)); //Water
+
+    humrcraft::game::Level* level = new humrcraft::game::Level({{-8, -8}, {8, 8}}, {0.5, 0.5});
+    game->add(level);
+    level->generateLevel();
+
+    //humrcraft::game::Tiles* background = new humrcraft::game::Tiles(resources);
+    //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(resources);
+    //game->add(background);
+    //game->add(foreground);
+    /*Thing* humr = new Thing(NULL, 0, NULL, NULL, new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}), 1, 0, (*textures)[0]);
+    humr->pos = {0, 0};
+    game->add(humr);*/
+
+    humrcraft::game::Thing* human = game->recreateThing(0, NULL, 0);
     human->pos = {0, 0};
     game->add(human);
-    humrcraft::game::Thing* matemat = game->createThing(1, NULL, 0);
+    humrcraft::game::Thing* matemat = game->recreateThing(1, NULL, 0);
     matemat->pos = {2, 2};
     game->add(matemat);
     hero = human;
+
     /*Polygon* polygon = new Polygon();
     std::cout<<"polygon"<<'\n';
     polygon->addVertex({50, 5.9});
@@ -237,6 +263,7 @@ int main(int argc, char** argv) {
         obj->vel = {1, (float)(rand()%314/100)};
         game->add(obj);
     }*/
+
     long lastUpdate = utils::getMS();
     double msPerUpdate = (double)1000/120;
     double deltaUpdate = 0;
@@ -271,21 +298,21 @@ int main(int argc, char** argv) {
                             case SDLK_d:
                                 hero->applyImpulse({1, hero->getOri().y-(float)math::pi/2});
                                 break;
-                            case SDLK_z:
+                            /*case SDLK_z:
                                 gmulti *= 10;
                                 break;
                             case SDLK_x:
                                 gmulti /= 10;
-                                break;
+                                break;*/
                             case SDLK_SCROLLLOCK:
                                 renderer->zoom = 1;
                                 break;
                             case SDLK_HOME:
                                 hero->pos = {0, 0};
                                 break;
-                            case SDLK_DELETE:
+                            /*case SDLK_DELETE:
                                 gmulti = 1;
-                                break;
+                                break;*/
                             case SDLK_END:
                                 hero->vel = {0, 0};
                                 break;
@@ -333,7 +360,6 @@ int main(int argc, char** argv) {
                         }
                         break;
                 }
-                //frame->processEvent(event);
             }
             if(!pause) {
                 update(msPerUpdate/1000);
