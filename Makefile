@@ -23,16 +23,18 @@
 # SOFTWARE.
 SD=./src
 BD=./build
-CC=gcc#i686-w64-mingw32-gcc
+CC=gcc
+#CC=i686-w64-mingw32-gcc
 CCFLAGS=-Wall -Wextra -Wpedantic -std=c11 -ggdb -O0
-CXX=g++#i686-w64-mingw32-g++
-CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0#-I./mingw32/SDL2/i686-w64-mingw32/include
+CXX=g++
+#CXX=i686-w64-mingw32-g++
+CXXFLAGS=-Wall -Wextra -Wpedantic -Wno-unused-parameter -Wno-write-strings -std=c++17 -ggdb -O0# -I./mingw32/SDL2/i686-w64-mingw32/include
 LD=$(CXX)
 #For linux:
 LDFLAGS=
 LDLIBS=-L/usr/lib/X11R6/lib -lX11 -lSDL2 -lSDL2_image -lSDL2_ttf -lGL -lGLU
 #For windows:
-#LDFLAGS=-m32 -mwindows
+#LDFLAGS=-static-libstdc++ -m32 -mwindows -lgdi32
 #LDLIBS=-L./mingw32/SDL2/i686-w64-mingw32/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lopengl32 -lglu32
 
 all: clean humrcraft

@@ -42,7 +42,7 @@ namespace humrcraft {
                 SDL_Window* window;
                 SDL_Surface* buffer;
                 float zoom; //Pixels per Meter
-                SDLRenderer(const char* title, int w, int h);
+                SDLRenderer(const char* title, int w, int h, uint32_t flags);
                 virtual ~SDLRenderer();
                 virtual void begin();
                 virtual void end();

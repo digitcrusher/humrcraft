@@ -156,13 +156,19 @@ namespace math {
     V2f polarToCarte(V2f polar) {
         return {polar.x*(float)cos(polar.y), polar.x*(float)sin(polar.y)};
     }
-    bool squareInSquare(V2fPair sqr1, V2fPair sqr2) {
-        return (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v1.y >= sqr1.v1.y && sqr2.v1.y <= sqr1.v2.y) ||
-               (sqr2.v2.x >= sqr1.v1.x && sqr2.v2.x <= sqr1.v2.x && sqr2.v2.y >= sqr1.v1.y && sqr2.v2.y <= sqr1.v2.y) ||
-               (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v2.y >= sqr1.v1.y && sqr2.v2.y <= sqr1.v2.y) ||
-               (sqr2.v2.x >= sqr1.v1.x && sqr2.v2.x <= sqr1.v2.x && sqr2.v1.y >= sqr1.v1.y && sqr2.v1.y <= sqr1.v2.y);
+    bool pointInSquare(V2i pos, V2iPair sqr) {
+        return pos.x >= sqr.v1.x && pos.x <= sqr.v2.x && pos.y >= sqr.v1.y && pos.y <= sqr.v2.y;
     }
-    bool squareInSquareCart(V2fPair sqr1, V2fPair sqr2) {
+    bool pointInSquare(V2f pos, V2fPair sqr) {
+        return pos.x >= sqr.v1.x && pos.x <= sqr.v2.x && pos.y >= sqr.v1.y && pos.y <= sqr.v2.y;
+    }
+    bool pointInSquare(V2iPair sqr1, V2iPair sqr2) {
+        return (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
+               (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
+               (sqr2.v2.x >= sqr1.v1.x && sqr2.v2.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
+               (sqr2.v2.x >= sqr1.v1.x && sqr2.v2.x <= sqr1.v2.x && sqr2.v2.y <= sqr1.v1.y && sqr2.v2.y >= sqr1.v1.y);
+    }
+    bool pointInSquare(V2fPair sqr1, V2fPair sqr2) {
         return (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
                (sqr2.v1.x >= sqr1.v1.x && sqr2.v1.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
                (sqr2.v2.x >= sqr1.v1.x && sqr2.v2.x <= sqr1.v2.x && sqr2.v1.y <= sqr1.v1.y && sqr2.v1.y >= sqr1.v2.y) ||
@@ -172,18 +178,18 @@ namespace math {
         float a=line.v2.x-line.v1.x,b=line.v2.y-line.v1.y;
         if(line.v1.x<line.v2.x) {
             if(line.v1.y<line.v2.y) {
-                if(!squareInSquare({line.v1.x,line.v1.y,line.v2.x,line.v2.y}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }else {
-                if(!squareInSquare({line.v1.x,line.v2.y,line.v2.x,line.v1.y}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }
         }else {
             if(line.v1.y<line.v2.y) {
-                if(!squareInSquare({line.v2.x,line.v1.y,line.v1.x,line.v2.y}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }else {
-                if(!squareInSquare({line.v2.x,line.v2.y,line.v1.x,line.v1.y}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }
         }
@@ -220,18 +226,18 @@ namespace math {
         float a=line.v2.x-line.v1.x,b=line.v2.y-line.v1.y;
         if(line.v1.x<line.v2.x) {
             if(line.v1.y<line.v2.y) {
-                if(!squareInSquare({line.v1.x-unprec,line.v1.y-unprec,line.v2.x+unprec,line.v2.y+unprec}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }else {
-                if(!squareInSquare({line.v1.x-unprec,line.v2.y-unprec,line.v2.x+unprec,line.v1.y+unprec}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }
         }else {
             if(line.v1.y<line.v2.y) {
-                if(!squareInSquare({line.v2.x-unprec,line.v1.y-unprec,line.v1.x+unprec,line.v2.y+unprec}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }else {
-                if(!squareInSquare({line.v2.x-unprec,line.v2.y-unprec,line.v1.x+unprec,line.v1.y+unprec}, {point.x,point.y,point.x,point.y}))
+                if(!pointInSquare(point, line))
                     return 0;
             }
         }

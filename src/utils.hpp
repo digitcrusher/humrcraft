@@ -33,11 +33,14 @@
 
 namespace utils {
     struct timer {
-        double lasttime;
+        double starttime;
+        double pausetime;
         double looplength;
         bool loopover;
+        bool pause;
     };
     void resetTimer(struct timer* timer);
+    void pauseTimer(struct timer* timer, bool pause);
     void setLoopTimer(struct timer* timer, bool loopover, double looplength);
     double getElapsedTimer(struct timer timer);
 

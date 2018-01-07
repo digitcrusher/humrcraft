@@ -23,6 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef _WIN32
 #ifndef TERMINAL_HPP
 #define TERMINAL_HPP
 #if defined(__linux__)
@@ -122,4 +123,5 @@ namespace terminal {
     void gotoxy(struct terminal* term, int x, int y);
 }
 
+#endif
 #endif

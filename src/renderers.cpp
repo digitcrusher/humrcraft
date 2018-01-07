@@ -29,17 +29,9 @@
 
 namespace humrcraft {
     namespace renderers {
-        SDLRenderer::SDLRenderer(const char* title, int w, int h) : Renderer() {
+        SDLRenderer::SDLRenderer(const char* title, int w, int h, uint32_t flags) : Renderer() {
             this->family.pushBack("SDLRenderer");
-            if(!(this->window = SDL_CreateWindow(title,
-                                            SDL_WINDOWPOS_UNDEFINED,
-                                            SDL_WINDOWPOS_UNDEFINED,
-                                            w,
-                                            h,
-                                            SDL_WINDOW_SHOWN |
-                                            SDL_WINDOW_RESIZABLE |
-                                            SDL_WINDOW_MOUSE_FOCUS |
-                                            SDL_WINDOW_INPUT_FOCUS))) {
+            if(!(this->window = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags))) {
                 std::cerr<<"SDL_CreateWindow error: "<<SDL_GetError()<<'\n';
                 throw;
             }

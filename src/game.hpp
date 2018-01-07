@@ -98,6 +98,8 @@ namespace humrcraft {
                 virtual math::V2i getSize();
                 virtual Block** getBlock(math::V2i pos);
                 virtual Block** getBlock(math::V2f pos);
+                virtual math::V2i BlocksMapPos(math::V2f pos);
+                virtual math::V2f BlocksGetPos(math::V2i pos);
                 virtual void generateLevel();
         };
         class Game : public World {
@@ -113,36 +115,26 @@ namespace humrcraft {
         };
         class Resources : public Interface { //TODO: implement wads
             public:
-                /*struct texturesheet {
-                    SDL_Surface* texturesheet;
-                };
-                struct texturesheet* createTextureSheet(const char* filename) {
-                    struct texturesheet* texturesheet = (struct texturesheet*)malloc(sizeof(texturesheet));
-
-                    return texturesheet;
-                }
-                SDL_Surface* getTexture(struct texturesheet* texturesheet) {
-                }*/
                 utils::Vector<SDL_Surface*> textures;
                 Resources();
                 virtual ~Resources();
                 virtual void addTexture(SDL_Surface* surface);
                 virtual SDL_Surface* getTexture(int n);
         };
-        class Tiles : public Object {
+        /*class Tiles : public Object {
             public:
                 int sizex;
                 int sizey;
                 int* tiles;
                 Resources* resources;
-                /*struct world* world;
+                *//*struct world* world;
                 int x, y, heading;
-                struct lfr last;*/
+                struct lfr last;*//*
                 Tiles(Resources* resources);
                 virtual ~Tiles();
                 virtual void update(double delta);
                 virtual void render(Renderer* renderer);
-        };
+        };*/
         class Gun : public Thing {
             public:
                 Projectile* sample;

@@ -28,14 +28,28 @@
 
 namespace utils {
     void resetTimer(struct timer* timer) {
-        timer->lasttime =(double)getMS()/1000;
+        timer->starttime = (double)getMS()/1000;
+    }
+    void pauseTimer(struct timer* timer, bool pause) {
+        if(pause) {
+            if(!timer->pause) {
+                timer->pausetime = (double)getMS()/1000;
+            }
+        }else {
+            timer->starttime = (double)getMS()/1000-(timer->pausetime-timer->starttime);
+        }
+        timer->pause = pause;
     }
     void setLoopTimer(struct timer* timer, bool loopover, double looplength) {
         timer->loopover = loopover;
         timer->looplength = looplength;
     }
     double getElapsedTimer(struct timer timer) {
-        return timer.loopover?fmod((double)getMS()/1000-timer.lasttime, timer.looplength):(double)getMS()/1000-timer.lasttime;
+        double time = (double)getMS()/1000-timer.starttime;
+        if(timer.pause) {
+            time = timer.pausetime-timer.starttime;
+        }
+        return timer.loopover?fmod(time, timer.looplength):time;
     }
     #if defined(__linux__)
     #include <stdio.h>

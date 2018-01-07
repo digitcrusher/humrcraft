@@ -28,15 +28,13 @@
 
 namespace graphics {
     int getPixel(SDL_Surface* surface, int x, int y) {
-        if(math::squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}
-                         ,{(float)x, (float)y, (float)x, (float)y})) {
+        if(math::pointInSquare((math::V2i){x, y}, (math::V2iPair){0, 0, surface->w-1, surface->h-1})) {
             return *(int*)((char*)surface->pixels+(x+y*surface->w)*(surface->pitch/surface->w));
         }
         return 0;
     }
     void drawPixel(SDL_Surface* surface, int x, int y, int color) {
-        if(math::squareInSquare({(float)0, (float)0, (float)surface->w-1, (float)surface->h-1}
-                         ,{(float)x, (float)y, (float)x, (float)y})) {
+        if(math::pointInSquare((math::V2i){x, y}, (math::V2iPair){0, 0, surface->w-1, surface->h-1})) {
             uint8_t r1, g1, b1, a1, r2, g2, b2, a2;
             int pixel = getPixel(surface, x, y);
             SDL_GetRGBA(color, surface->format, &r1, &g1, &b1, &a1);

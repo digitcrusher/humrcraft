@@ -233,11 +233,16 @@ namespace humrcraft {
             return {this->size.v2.x-this->size.v1.x, this->size.v2.y-this->size.v1.y};
         }
         Block** Level::getBlock(math::V2i pos) {
-            return this->blocks+(pos.x-this->size.v1.x)+(pos.y-this->size.v1.y)*this->getSize().x;
+            return this->blocks+(pos.x-this->size.v1.x+this->getSize().x)%this->getSize().x+(pos.y-this->size.v1.y+this->getSize().y)%this->getSize().y*this->getSize().x;
         }
         Block** Level::getBlock(math::V2f pos) {
-            return this->getBlock((math::V2i){(int)(pos.x/this->blocksize.x),
-                                              (int)(pos.y/this->blocksize.y)});
+            return this->getBlock(this->BlocksMapPos(pos));
+        }
+        math::V2i Level::BlocksMapPos(math::V2f pos) {
+            return {(int)floor((pos-this->getPos()).x/this->blocksize.x), (int)floor((pos-this->getPos()).y/this->blocksize.y)};
+        }
+        math::V2f Level::BlocksGetPos(math::V2i pos) {
+            return (math::V2f){(float)pos.x*this->blocksize.x, (float)pos.y*this->blocksize.y}+this->getPos();
         }
         void Level::generateLevel() {
             if(!this->checkFamily(this->world, "Game", 2)) return;
@@ -256,7 +261,7 @@ namespace humrcraft {
                             blocktype = 3;
                             break;
                     }
-                    *block = ((humrcraft::game::Game*)this->world)->recreateBlock(blocktype, NULL, 0);
+                    *block = ((Game*)this->world)->recreateBlock(blocktype, NULL, 0);
                 }
             }
             /*for(int i=0; i<this->getSize().x*this->getSize().y; i++) {

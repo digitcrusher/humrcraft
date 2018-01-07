@@ -23,16 +23,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#ifndef _WIN32
+#include "terminal.hpp"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include "utils.hpp"
-#include "terminal.hpp"
 
 namespace terminal {
     #if defined(_WIN32)
     static unsigned int windowid=0;
-    static LRESULT CALLBACK struct terminal_WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+    static LRESULT CALLBACK terminal_WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
         PAINTSTRUCT ps;
         switch(iMsg) {
             case WM_PAINT:
@@ -43,7 +44,7 @@ namespace terminal {
         }
         return DefWindowProc(hwnd, iMsg, wParam, lParam); //Dump remainning message that wasn't calculated
     }
-    void* struct terminal_thread(void* term) {
+    void* terminal_thread(void* term) {
         while(1) updateTerminal((struct terminal*)term);
         return NULL;
     }
@@ -90,20 +91,20 @@ namespace terminal {
         XClearWindow(term->d, term->w);
         XMapWindow(term->d, term->w);
     #elif defined(_WIN32)
-        char* szAppName = uitos(windowid++);
+        char* szAppName = utils::uitos(windowid++);
         WNDCLASSEX wndclass; //Temporary structure with window settings
         wndclass.cbSize        = sizeof(wndclass); //Size of WNDCLASSEX
         wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC; //Style parameters
-        wndclass.lpfnWndProc   = struct terminal_WndProc; //Pointer to WndProc which handles messages
+        wndclass.lpfnWndProc   = terminal_WndProc; //Pointer to WndProc which handles messages
         wndclass.cbClsExtra    = 0;
         wndclass.cbWndExtra    = 0;
-        wndclass.hInstance     = hInstance;
-        wndclass.hIcon         = LoadIcon(NULL,IDI_APPLICATION); //Load icon for taskbar
-        wndclass.hCursor       = LoadCursor(NULL,IDC_ARROW); //Load cursor for window
+        wndclass.hInstance     = GetModuleHandle(NULL);
+        wndclass.hIcon         = LoadIcon(NULL, IDI_APPLICATION); //Load icon for taskbar
+        wndclass.hCursor       = LoadCursor(NULL, IDC_ARROW); //Load cursor for window
         wndclass.hbrBackground = (HBRUSH) GetStockObject(BLACK_BRUSH); //Window background color
         wndclass.lpszMenuName  = NULL;
         wndclass.lpszClassName = szAppName; //Window ID
-        wndclass.hIconSm       = LoadIcon(NULL,IDI_APPLICATION); //Load icon for title bar
+        wndclass.hIconSm       = LoadIcon(NULL, IDI_APPLICATION); //Load icon for title bar
         if(!RegisterClassEx(&wndclass)) { //Register wndclass structure
             return NULL;
         }
@@ -116,16 +117,16 @@ namespace terminal {
                             GET_TEXTAREA_HEIGHT(term), //Starting height
                             NULL, //Handle to parent window
                             NULL, //Handle to parent window menu
-                            hInstance, //Handle to window initiation argument
+                            GetModuleHandle(NULL), //Handle to window initiation argument
                             NULL
                             );
         if(!term->hwnd) {
             return NULL;
         }
-        ShowWindow(term->hwnd, iCmdShow); //Show window
+        ShowWindow(term->hwnd, 5); //Show window
         UpdateWindow(term->hwnd); //Redraw window
         free(szAppName);
-        pthread_create(&term->thread, NULL, struct terminal_thread, (void*)term);
+        pthread_create(&term->thread, NULL, terminal_thread, (void*)term);
     #endif
         return term;
     }
@@ -553,3 +554,4 @@ namespace terminal {
         term->ocury = y;
     }
 }
+#endif

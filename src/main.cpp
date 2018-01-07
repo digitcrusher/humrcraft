@@ -32,6 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
@@ -41,10 +42,11 @@
 #include "renderers.hpp"
 #include "graphics.hpp"
 #include "game.hpp"
-#include "language.hpp"
-#include "wad.h"
+//#include "language.hpp"
+//#include "wad.h"
+#include "textsweeper.hpp"
 
-class BigNumber {
+/*class BigNumber {
     utils::Vector<char> data;
     bool sign;
     int size;
@@ -65,24 +67,28 @@ class BigNumber {
     }
     virtual BigNumber& operator/(const BigNumber& rvalue) {
     }
-};
+};*/
 
 humrcraft::game::Game* game = new humrcraft::game::Game();
 humrcraft::renderers::SDLRenderer* renderer;
 humrcraft::Speaker* speaker;
 humrcraft::game::Resources* resources;
-humrcraft::game::Thing* hero;
+humrcraft::game::Thing* hero = NULL;
+textsweeper::Minefield* minefield;
 //float gmulti = 1;
 bool pause = 0;
 bool running = 1;
 void stop(int status) {
-    game->destroyAll();
-    delete game;
     TTF_Quit();
     SDL_Quit();
     exit(status);
 }
 void update(double delta) {
+    if(minefield->getGameState()) {
+        minefield->showAll();
+        utils::pauseTimer(&minefield->timer, 1);
+        std::cout<<"Time: "<<utils::getElapsedTimer(minefield->timer)<<'\n';
+    }
     game->update(delta);
     game->speak();
     game->interface();
@@ -106,7 +112,10 @@ void update(double delta) {
     }*/
 }
 void render() {
-    renderer->pos = hero->getPos();
+    if(hero) {
+        renderer->pos = hero->getPos();
+    }
+    SDL_SetWindowSize(renderer->window, minefield->getSize().x*minefield->blocksize.x*renderer->zoom, minefield->getSize().y*minefield->blocksize.y*renderer->zoom);
     game->render();
     //renderer->begin();
     //renderer->end();
@@ -185,13 +194,14 @@ int main(int argc, char** argv) {
         std::cerr<<"SDL_Init error: "<<SDL_GetError()<<'\n';
         stop(1);
     }
-    renderer = new humrcraft::renderers::SDLRenderer("humrcraft 1.0", 800, 600);
+    renderer = new humrcraft::renderers::SDLRenderer("humrcraft 1.0", 800, 600, SDL_WINDOW_SHOWN | SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_INPUT_FOCUS);
     game->add(renderer);
     renderer->zoom = 32;
     /*speaker = new Speaker();
     game->add(speaker);*/
     resources = new humrcraft::game::Resources();
     game->add(resources);
+    //offset: 0
     resources->addTexture(IMG_Load("./gfx/humr.png"));
     resources->addTexture(IMG_Load("./gfx/human.png"));
     resources->addTexture(IMG_Load("./gfx/matemat0.png"));
@@ -200,7 +210,27 @@ int main(int argc, char** argv) {
     resources->addTexture(IMG_Load("./gfx/papaver_orientale.png"));
     resources->addTexture(IMG_Load("./gfx/error.png"));
     resources->addTexture(IMG_Load("./gfx/water.png"));
+    //offset: 8
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/tile.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/tile_exposed.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/flag.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/mine.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/wrong.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/zero.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/one.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/two.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/three.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/four.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/five.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/six.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/seven.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/eight.png"));
+    resources->addTexture(IMG_Load("./gfx/textsweeper/classic/nine.png"));
 
+    game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
+        thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.5, -0.375}, {0.5, 0.3125}}));
+        thing->textureid = 0;
+    }, NULL)); //Humr
     game->registerThing(new humrcraft::game::Thing(NULL, 0, humrcraft::game::Thing::defaultRecreatef, [](humrcraft::game::Thing* thing) {
         thing->setShape(new humrcraft::shapes::Rectangle((math::V2fPair){{-0.34375, -0.5}, {0.34375, 0.5}}));
         thing->textureid = 1;
@@ -222,10 +252,22 @@ int main(int argc, char** argv) {
     game->registerBlock(new humrcraft::game::Block(NULL, 0, humrcraft::game::Block::defaultRecreatef, [](humrcraft::game::Thing* thing) {
         thing->textureid = 7;
     }, NULL)); //Water
+    game->registerBlock(new textsweeper::Tile(NULL, 0, textsweeper::Tile::defaultRecreatef, NULL, NULL)); //Tile
 
-    humrcraft::game::Level* level = new humrcraft::game::Level({{-8, -8}, {8, 8}}, {0.5, 0.5});
-    game->add(level);
-    level->generateLevel();
+    humrcraft::game::Thing* humr = game->recreateThing(0, NULL, 0);
+    humr->pos = {0, 0};
+    game->add(humr);
+    humrcraft::game::Thing* human = game->recreateThing(1, NULL, 0);
+    human->pos = {-2, 0-2};
+    game->add(human);
+    humrcraft::game::Thing* matemat = game->recreateThing(2, NULL, 0);
+    matemat->pos = {2, 2};
+    game->add(matemat);
+
+    int difficulty = 20;
+    minefield = new textsweeper::Minefield({{-4, -4}, {4, 4}});
+    game->add(minefield);
+    minefield->resetMinefield();
 
     //humrcraft::game::Tiles* background = new humrcraft::game::Tiles(resources);
     //humrcraft::game::Tiles* foreground = new humrcraft::game::Tiles(resources);
@@ -235,13 +277,6 @@ int main(int argc, char** argv) {
     humr->pos = {0, 0};
     game->add(humr);*/
 
-    humrcraft::game::Thing* human = game->recreateThing(0, NULL, 0);
-    human->pos = {0, 0};
-    game->add(human);
-    humrcraft::game::Thing* matemat = game->recreateThing(1, NULL, 0);
-    matemat->pos = {2, 2};
-    game->add(matemat);
-    hero = human;
 
     /*Polygon* polygon = new Polygon();
     std::cout<<"polygon"<<'\n';
@@ -275,18 +310,29 @@ int main(int argc, char** argv) {
     running = 1;
     struct utils::timer timer;
     utils::setLoopTimer(&timer, 0, 0);
+    utils::pauseTimer(&timer, 0);
     utils::resetTimer(&timer);
     while(running) {
         long now = utils::getMS();
         deltaUpdate += (now-lastUpdate)/msPerUpdate;
         lastUpdate = now;
         if(deltaUpdate >= 1) {
+            if(!pause) {
+                update(msPerUpdate/1000);
+            }
+            updates++;
+            deltaUpdate -= 1;
+        }
+        now = utils::getMS();
+        deltaRender += (now-lastRender)/msPerRender;
+        lastRender = now;
+        if(deltaRender >= 1) {
             SDL_Event event;
             while(renderer->getEvent(&event)) {
                 switch(event.type) {
                     case SDL_KEYDOWN:
                         switch(event.key.keysym.sym) {
-                            case SDLK_w:
+                            /*case SDLK_w:
                                 hero->applyImpulse({1, hero->getOri().y});
                                 break;
                             case SDLK_a:
@@ -298,24 +344,24 @@ int main(int argc, char** argv) {
                             case SDLK_d:
                                 hero->applyImpulse({1, hero->getOri().y-(float)math::pi/2});
                                 break;
-                            /*case SDLK_z:
+                            case SDLK_z:
                                 gmulti *= 10;
                                 break;
                             case SDLK_x:
                                 gmulti /= 10;
-                                break;*/
+                                break;
                             case SDLK_SCROLLLOCK:
                                 renderer->zoom = 1;
                                 break;
                             case SDLK_HOME:
                                 hero->pos = {0, 0};
                                 break;
-                            /*case SDLK_DELETE:
+                            case SDLK_DELETE:
                                 gmulti = 1;
-                                break;*/
+                                break;
                             case SDLK_END:
                                 hero->vel = {0, 0};
-                                break;
+                                break;*/
                             case SDLK_ESCAPE:
                                 pause = !pause;
                                 break;
@@ -354,23 +400,43 @@ int main(int argc, char** argv) {
                     case SDL_QUIT:
                         running = 0;
                         break;
-                    case SDL_MOUSEMOTION:
+                    /*case SDL_MOUSEMOTION:
                         if(!pause) {
                             hero->ori = math::fatp(hero->pos, renderer->SDLGetPos({event.motion.x, event.motion.y}));
+                        }
+                        break;*/
+                    case SDL_MOUSEBUTTONDOWN:
+                        switch(event.button.button) {
+                            case SDL_BUTTON_LEFT: {
+                                math::V2i click = minefield->BlocksMapPos(renderer->SDLGetPos({event.button.x, event.button.y}));
+                                ((textsweeper::Tile*)*minefield->getBlock(click))->pressed = 1;
+                                }break;
+                        }
+                        break;
+                    case SDL_MOUSEBUTTONUP:
+                        switch(event.button.button) {
+                            case SDL_BUTTON_LEFT: {
+                                if(minefield->getGameState()) {
+                                    break;
+                                }
+                                math::V2i click = minefield->BlocksMapPos(renderer->SDLGetPos({event.button.x, event.button.y}));
+                                if(!minefield->turns) {
+                                    minefield->generateMinefield(time(0), minefield->getSize().x*minefield->getSize().y*((float)difficulty/100), {click-(math::V2i){1, 1}, click+(math::V2i){1, 1}},
+                                                                 textsweeper::normalneighbors, textsweeper::normalneighborssize);
+                                }
+                                minefield->expose(click, textsweeper::normalneighbors, textsweeper::normalneighborssize, 0);
+                                ((textsweeper::Tile*)*minefield->getBlock(click))->pressed = 0;
+                                }break;
+                            case SDL_BUTTON_MIDDLE:
+                                minefield->resetMinefield();
+                                break;
+                            case SDL_BUTTON_RIGHT:
+                                minefield->flag(minefield->BlocksMapPos(renderer->SDLGetPos({event.button.x, event.button.y})));
+                                break;
                         }
                         break;
                 }
             }
-            if(!pause) {
-                update(msPerUpdate/1000);
-            }
-            updates++;
-            deltaUpdate -= 1;
-        }
-        now = utils::getMS();
-        deltaRender += (now-lastRender)/msPerRender;
-        lastRender = now;
-        if(deltaRender >= 1) {
             render();
             frames++;
             deltaRender -= 1;
